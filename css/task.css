@@ -1,0 +1,156 @@
+@charset "UTF-8";
+
+
+
+div#login_info_area {border : 1px solid transparent;
+ position : relative;
+}
+
+div#box_data_area {border : 1px solid transparent;
+ position : relative;
+ min-height : 400px;
+}
+
+span.subtitle {
+ color : #ffffff;
+ font-size : 18px;
+ line-height : 28px;
+
+ position : relative;
+ left : 50%;
+ margin-left : -500px;
+}
+
+
+
+
+div.parameter_sheet_data_div {
+ width : 160px;
+ height : 50px;
+}
+
+div.parameter_sheet_data_div p {
+ height : 50px;
+ width : 160px;
+ font-size : 9px;
+ overflow : hidden;
+ margin : 0px;
+}
+
+div.parameter_sheet_data_div img {
+ cursor : pointer;
+}
+
+
+span.parameter_sheet {
+ color : #60cc60; 
+}
+
+span.ok_log {
+ color : #6060ff;
+}
+
+span.ng_log {
+ color : #ff6060;
+}
+
+span.error_log {
+ color : #c0c000;
+}
+
+span.diff_log {
+ color : #996600;
+}
+
+span.optional_log {
+ color : #707080;
+}
+
+
+div#controle_area p {
+ margin-top : 8px;
+ margin-left : 4px;
+ margin-bottom : 1px;
+ font-size : 12px;
+}
+
+
+div#loading_message {
+ position : relative;
+ width : 400px;
+ top : 200px;
+ left : 50%;
+ margin-left : -200px;
+ padding : 24px;
+
+ text-align : center;
+
+ border  : 1px solid #a0a0a0;
+ background-color : #fafaf0;
+
+ border-radius: 9px;
+ box-shadow : 0px 0px 9px 1px rgba(0,0,0,0.4);
+}
+
+div#loading_message span {
+ font-size : 14px;
+ line-height: 18px;
+}
+
+
+
+ul.node_list {
+ padding : 4px;
+ margin : 4px;
+}
+
+ul.node_list li {
+ margin-top : 1px;
+}
+
+span.ok_ng_radio_button {
+ margin : 4px;
+}
+
+span.ok_ng_radio_button input[type="radio"] {
+ display: none;
+}
+
+span.ok_ng_radio_button label{
+ margin: 0;
+ padding: 2px;
+ border-top : 1px solid transparent;
+ border-right : 1px solid #ffffff;
+ border-bottom : 1px solid transparent;
+ border-left : 1px solid transparent;
+ font-size: 11px;
+ text-align: center;
+ transition: .2s;
+}
+
+span.ok_ng_radio_button label:first-of-type{
+ background-color: #c0c0ff;
+ color: #f0f0f0;
+ font-weight : bold;
+ border-radius: 3px 0 0 3px;
+}
+
+span.ok_ng_radio_button label:last-of-type{
+ background-color: #ffc0c0;
+ color: #fff0f0;
+ font-weight : bold;
+ border-right: 1px solid transparent;
+ border-radius: 0 3px 3px 0;
+}
+
+span.ok_ng_radio_button input[type="radio"]:checked + label:first-of-type {
+ background-color: #6060ff;
+ color: #ffffff;
+ font-weight : bold;
+}
+
+span.ok_ng_radio_button input[type="radio"]:checked + label:last-of-type {
+ background-color: #ff6060;
+ color: #ffffff;
+ font-weight : bold;
+}

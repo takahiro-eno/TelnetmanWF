@@ -1,0 +1,201 @@
+@charset "UTF-8";
+
+
+
+
+div#button_area {border : 1px solid transparent;
+ position : relative;
+}
+
+div#box_data_area {border : 1px solid transparent;
+ min-height : 400px;
+}
+
+
+
+
+
+
+div.flowchart_data_div {
+ width : 160px;
+ height :150px;
+}
+
+div.flowchart_data_div p {
+ height : 50px;
+ width : 160px;
+ font-size : 9px;
+ overflow : hidden;
+ margin : 0px;
+}
+
+div.flowchart_data_div img {
+ cursor : pointer;
+}
+
+
+
+div.drag_and_drop_zone {
+ width : 160px;
+ height : 50px;
+}
+
+div.drag_and_drop_zone p {
+ height : 50px;
+ width : 160px;
+ font-size : 9px;
+ overflow : hidden;
+ margin : 0px;
+}
+
+div.drag_and_drop_zone img {
+ cursor : pointer;
+}
+
+
+
+div.condition_zone {
+ width : 266px;
+ border : 1px dashed #c0ccc0;
+ overflow: auto;
+ padding : 2px;
+ margin-bottom : 4px;
+ display : none;
+}
+
+div.condition_zone h2 {
+ margin : 2px;
+}
+
+div.condition_zone h2 span {
+ font-weight : normal;
+}
+
+div.condition_zone p {
+ margin : 2px;
+ white-space : nowrap;
+}
+
+
+
+/* --------------- */
+/* item view table */
+/* --------------- */
+table.telnetman_item_viewer {
+ min-width : 596px;
+
+ position : relative;
+ top : 100px;
+ margin : 0 auto;
+ 
+ border-spacing : 1px;
+ 
+ background-color : #c0ccc0;
+ border-radius : 12px 12px 4px 4px / 8px 8px 4px 4px;
+ box-shadow : 0px 0px 9px 1px rgba(0,0,0,0.4);
+}
+
+table.telnetman_item_viewer th {
+ padding : 8px;
+ 
+ background-color : #556B2F;
+ border-radius : 12px 12px 4px 4px / 8px 8px 4px 4px;
+}
+
+table.telnetman_item_viewer th div {
+ position : relative;
+ min-width : 580px;
+ height : 20px;
+ text-align : center;
+}
+
+table.telnetman_item_viewer th div span {
+ color : #ffffff;
+ font-size : 18px;
+ font-weight : bold;
+ letter-spacing : 0.2em;
+}
+
+table.telnetman_item_viewer th div img {
+ position : absolute;
+ top  : 2px;
+ right : 4px;
+ cursor : pointer;
+}
+
+table.telnetman_item_viewer td {
+ padding : 8px;
+ background-color : #ffffff;
+ border-radius : 4px;
+ white-space: nowrap;
+}
+
+td.telnetman_item_viewer_td1 {
+ width : 150px;
+}
+
+span.telnetman_item_viewer_span1 {
+ color : #556B2F;
+ font-size : 14px;
+ font-weight : bold;
+}
+
+span.telnetman_item_viewer_span2 {
+ color : #112211;
+ font-size : 14px;
+ font-weight : normal;
+}
+
+div.telnetman_item_viewer_condition_list {
+ width : 402px;
+ overflow : auto;
+}
+
+div.telnetman_item_viewer_condition_list span {
+ color : #554411;
+ margin : 4px;
+}
+
+div.telnetman_item_viewer_condition_list span.and_or {
+ font-size : 11px;
+}
+
+
+/*-------------------------------*/
+/*Telentman parameter description*/
+/*-------------------------------*/
+span.desc_green {
+ color : #00b050;
+ font-weight : bold;
+ font-size : 14px;
+}
+
+span.desc_blue {
+ color : #0070c0;
+ font-weight : bold;
+ font-size : 14px;
+}
+
+span.desc_black {
+ color : #404040;
+ font-weight : bold;
+ font-size : 14px;
+}
+
+span.desc_grey {
+ color : #808080;
+ font-weight : normal;
+ font-size : 14px;
+}
+
+span.desc_comment {
+ color : #808080;
+ font-weight : normal;
+ font-size : 12px;
+}
+
+span.desc_red {
+ color : #c00000;
+ font-weight : bold;
+ font-size : 14px;
+}

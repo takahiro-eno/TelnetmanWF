@@ -1,0 +1,232 @@
+@charset "UTF-8";
+
+
+
+section#create_flow {border : 1px solid transparent;
+ height : 100px;
+ width : 1000px;
+ margin : 0 auto;
+}
+
+section#create_flow h2{
+ margin : 16px;
+ font-size : 18px;
+ font-weight : bold;
+}
+
+section#create_flow div{border : 1px solid transparent;
+ margin-left : 24px;
+ height : 40px;
+ width : 900px;
+}
+
+section#create_flow p{border : 1px solid transparent;
+ position : relative;
+ float : left;
+ padding : 4px;
+ margin : 0px;
+}
+
+section#create_flow span {
+ font-size : 12px;
+}
+
+
+span.search_area {
+ position : relative;
+ left : 80%;
+ top : 4px;
+}
+
+
+div.flow_panel_zone {
+ width : 960px;
+ margin : 0 auto;
+ padding : 20px;
+}
+
+section#flow_list_area header{border : 1px solid transparent;
+ position : relative;
+ height : 52px;
+ background-color : #c0ccc0;
+ border-radius: 9px 9px 0 0;
+}
+
+section#flow_list_area header h2 {
+ position : relative;
+ float : left;
+ margin : 0px;
+ padding : 16px;
+
+ font-size : 16px;
+ font-weight : bold;
+ text-shadow : 1px 1px 0px #ffffff;
+}
+
+section#flow_list_area header p {
+ position : relative;
+ float : left;
+ margin : 0px;
+ padding : 16px;
+}
+
+section#flow_list_area header button {
+ margin-left : 8px;
+ margin-right : 8px;
+}
+
+section#flow_list_area header div {
+ position : absolute;
+ top : 18px;
+ right : 8px;
+}
+
+section#flow_list_area header div input[type="radio"] {
+ display: none;
+}
+
+section#flow_list_area header div label{
+ margin: 0;
+ padding: 8px;
+ border-top : 1px solid transparent;
+ border-right : 1px solid #ffffff;
+ border-bottom : 1px solid transparent;
+ border-left : 1px solid transparent;
+ background-color: #f0f0f0;
+ color: #707070;
+ font-size: 11px;
+ text-align: center;
+ transition: .2s;
+}
+
+section#flow_list_area header div label:first-of-type{
+ border-radius: 5px 0 0 5px;
+}
+
+section#flow_list_area header div label:last-of-type{
+ border-right: 1px solid transparent;
+ border-radius: 0 5px 5px 0;
+}
+
+section#flow_list_area header div input[type="radio"]:checked + label {
+ background-color: #707070;
+ color: #f0f0f0;
+}
+
+
+section#flow_list_area article {
+ width : 956px;
+ border-top : 1px solid transparent;
+ border-left : 2px solid #c0ccc0;
+ border-right : 2px solid #c0ccc0;
+ border-bottom : 2px solid #c0ccc0;
+ background-color : #f8f8f8;
+ border-radius: 0 0 9px 9px;
+}
+
+
+table.create_task_table {
+ margin : 16px;
+}
+
+table.create_task_table th {
+ text-align : left;
+ padding : 4px;
+
+ font-size : 14px;
+ font-weight : bold;
+}
+
+table.create_task_table td {
+ text-align : left;
+ padding : 4px;
+}
+
+table.create_task_table td span {
+ font-size : 12px;
+}
+
+
+table.task_list_table {
+ margin : 16px;
+}
+
+table.task_list_table th {
+ text-align : left;
+ padding : 4px;
+
+ font-size : 14px;
+ font-weight : bold;
+}
+
+table.task_list_table td {
+ text-align : left;
+ padding : 4px;
+}
+
+table.task_list_table td span {
+ font-size : 12px;
+}
+
+
+
+div.confirm_import_data {
+ position : relative;
+ width : 400px;
+ top : 200px;
+ left : 50%;
+ margin-left : -200px;
+ padding : 24px;
+
+ text-align : left;
+
+ border  : 1px solid #a0a0a0;
+ background-color : #fafaf0;
+
+ border-radius: 9px;
+ box-shadow : 0px 0px 9px 1px rgba(0,0,0,0.4);
+}
+
+p.import_flow_title {
+ font-size : 16px;
+ font-weight : bold;
+ text-shadow : 1px 1px 0px #ffffff;
+}
+
+p.import_action {
+ margin-left : 32px;
+}
+
+p.import_action span {
+ margin-left : 16px;
+}
+
+p.import_message {
+ text-align : center;
+ font-size : 12px;
+ line-height : 16px;
+}
+
+
+nav#page_navi_area {border : 1px solid transparent;
+ height : 30px;
+ width : 1000px;
+ margin : 0 auto;
+}
+
+span.navi_link {
+ font-size : 12px;
+ font-weight : bold;
+ color : #AABF7F;
+ cursor : pointer;
+ margin-left : 2px;
+ margin-right : 2px;
+}
+
+span.page_number {
+ font-size : 12px;
+ font-weight : bold;
+ color : #556B2F;
+ margin-left : 2px;
+ margin-right : 2px;
+}

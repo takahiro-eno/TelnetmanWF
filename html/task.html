@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang='ja'>
+<head>
+<meta charset='UTF-8'>
+<title>Telnetman Work Flow</title>
+<link rel='stylesheet' type='text/css' href='css/base.css'>
+<link rel='stylesheet' type='text/css' href='css/common.css'>
+<link rel='stylesheet' type='text/css' href='css/task.css'>
+<link rel='stylesheet' type='text/css' href='css/joint.css'>
+<link rel='shortcut icon' href='img/favicon.ico' type='image/vnd.microsoft.icon'>
+<link rel='icon' href='img/favicon.ico' type='image/vnd.microsoft.icon'>
+<script type='text/javascript' src='js/json2.js'></script>
+<script type='text/javascript' src='js/jquery.js'></script>
+<script type='text/javascript' src='js/lodash.min.js'></script>
+<script type='text/javascript' src='js/backbone-min.js'></script>
+<script type='text/javascript' src='js/joint.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/common.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/telnetmanWorkFlow.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/updateTask.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/controleStorage.js'></script>
+</head>
+<body onload='objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(); objUpdateTask.setFlowIdAndTaskIdAndPassword(); objUpdateTask.telnetmanLoginInfo();' ondragover='event.preventDefault();' ondrop='event.preventDefault();'>
+<header class='page_header'>
+<div class='title_line'><span class='subtitle' id='task_title_area'></span></div>
+<h1 id='flow_title_area'></h1>
+</header>
+
+<div id='section_zone'>
+
+
+
+<div id='controle_area'>
+
+<div id='login_info_area'>
+<table>
+<tr>
+<td rowspan='2'><span>Telnetman</span></td><td><input type='text' style='width:112px;' value='' id='telnetman_login_user' onblur='objControleStorageL.setTelnetmanLoginUser(this.value)' placeholder='ログインID' spellcheck='false' autocomplete='off'></td>
+</tr>
+<tr>
+<td><input type='password' style='width:112px;' value='' id='telnetman_login_password' onblur='objControleStorageL.setTelnetmanLoginPassword(this.value)' placeholder='ログインPassword'></td>
+</tr>
+<tr>
+<td colspan='2'><input type='text' style='width:112px;' id='new_title' value='' spellcheck='false' autocomplete='off'><button class='enable' onclick='objTelnetmanWorkFlow.updateTitlePassword("title");'>タスク&nbsp;タイトル変更</button></td>
+</tr>
+</table>
+</div>
+
+<div id='box_data_area'></div>
+
+</div>
+
+
+
+
+<div id='workflow_area'><div id='workflow_zone'></div></div>
+</div>
+</body>
+</html>

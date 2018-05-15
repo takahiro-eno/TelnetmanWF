@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang='ja'>
+<head>
+<meta charset='UTF-8'>
+<title>Telnetman Work Flow</title>
+<link rel='stylesheet' type='text/css' href='css/base.css'>
+<link rel='stylesheet' type='text/css' href='css/common.css'>
+<link rel='stylesheet' type='text/css' href='css/flow.css'>
+<link rel='stylesheet' type='text/css' href='css/joint.css'>
+<link rel='shortcut icon' href='img/favicon.ico' type='image/vnd.microsoft.icon'>
+<link rel='icon' href='img/favicon.ico' type='image/vnd.microsoft.icon'>
+<script type='text/javascript' src='js/json2.js'></script>
+<script type='text/javascript' src='js/jquery.js'></script>
+<script type='text/javascript' src='js/lodash.min.js'></script>
+<script type='text/javascript' src='js/backbone-min.js'></script>
+<script type='text/javascript' src='js/joint.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/common.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/telnetmanWorkFlow.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/updateFlow.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/controleStorage.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/parameterConditions.js'></script>
+</head>
+<body onload='objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(); objUpdateFlow.setFlowIdAndPassword();' ondragover='event.preventDefault();' ondrop='event.preventDefault();'>
+<header class='page_header'>
+<div class='title_line'><h1>Telnetman&nbsp;拡張ツール</h1></div>
+<h1 id='flow_title_area'></h1>
+</header>
+
+<div id='section_zone'>
+
+<div id='controle_area'>
+<div id='button_area'>
+<table>
+<tr>
+<td><span>表示域&nbsp;:&nbsp;</span><button class='enable' onclick='objTelnetmanWorkFlow.extendPaper();'>拡張</button><button class='enable' onclick='objTelnetmanWorkFlow.adjustPaper();'>縮小</button></td>
+</tr>
+<tr>
+<td><button class='enable' onclick='objUpdateFlow.createNewWorkBox();'>new work</button><button class='enable' onclick='objUpdateFlow.createNewCaseBox();'>new case</button><button class='enable' onclick='objUpdateFlow.createNewTerminalBox();'>new terminal</button></td>
+</tr>
+<tr>
+<td><img class='onclick_node' src='img/download.png' width='16' height='16' alt='download all data' onclick='objUpdateFlow.getAllData();'></td>
+</tr>
+<tr>
+<td><input type='text' style='width:112px;' id='new_title' value='' spellcheck='false' autocomplete='off'><button class='enable' onclick='objTelnetmanWorkFlow.updateTitlePassword("title");'>フロー&nbsp;タイトル変更</button></td>
+</tr>
+<tr>
+<td><input type='password' style='width:112px;' id='new_flow_password' value=''><button class='enable' onclick='objTelnetmanWorkFlow.updateTitlePassword("flow_password");'>編集パスワード変更</button></td>
+</tr>
+<tr>
+<td><input type='password' style='width:112px;' id='new_task_password' value=''><button class='enable' onclick='objTelnetmanWorkFlow.updateTitlePassword("task_password");'>実行パスワード変更</button></td>
+</tr>
+<tr>
+<td><input type='password' style='width:50px;' id='enable_password' value=''><button class='enable' onclick='objUpdateFlow.updateEnablePassword();'>enable&nbsp;password&nbsp;一括変更</button></td>
+</tr>
+</table>
+</div>
+<div id='box_data_area'></div>
+</div>
+
+<div id='workflow_area'><div id='workflow_zone'></div></div>
+</div>
+</body>
+</html>

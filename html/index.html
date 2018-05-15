@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang='ja'>
+<head>
+<meta charset='UTF-8'>
+<title>Telnetman Work Flow</title>
+<link rel='stylesheet' type='text/css' href='css/base.css'>
+<link rel='stylesheet' type='text/css' href='css/flow_list.css'>
+<link rel='stylesheet' type='text/css' href='css/common.css'>
+<link rel='shortcut icon' href='img/favicon.ico' type='image/vnd.microsoft.icon'>
+<link rel='icon' href='img/favicon.ico' type='image/vnd.microsoft.icon'>
+<script type='text/javascript' src='js/base64.js'></script>
+<script type='text/javascript' src='js/json2.js'></script>
+<script type='text/javascript' src='js/jquery.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/common.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/flowList.js'></script>
+<script type='text/javascript' charset='UTF-8' src='js/controleStorage.js'></script>
+</head>
+<body onload='objFlowList.getFlowList();' ondrop='objFlowList.onDropAllData(event);' ondragover='objCommon.onDragOver(event);'>
+<header class='page_header'>
+<div class='title_line'><h1>Telnetman&nbsp;拡張ツール</h1><span class='search_area'><input type='text' size='20' value='' id='search_word'><button class='enable' onclick='objFlowList.searchFlowList();'>検索</button></span></div>
+<h1><img src='img/title.png' width='672' height='56' alt='title'></h1>
+</header>
+
+
+<section id='create_flow'>
+<h2>新規Work Flow</h2>
+<div>
+<p><span>タイトル</span><input type='text' style='width:250px;' id='new_flow_title' value='' spellcheck='false' autocomplete='off'></p>
+<p><span>編集パスワード</span><input type='password' style='width:100px;' id='new_flow_password' value=''></p>
+<p><span>実行パスワード</span><input type='password' style='width:100px;' id='new_task_password' value=''></p>
+<p><button class='enable' onclick='objFlowList.createFlow();'>作成</button></p>
+</div>
+</section>
+
+<nav id='page_navi_area'></nav>
+
+<section id='flow_list_area'></section>
+</body>
+</html>
