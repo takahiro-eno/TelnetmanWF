@@ -78,7 +78,7 @@ my $json_start_link_vertices = &JSON::to_json(\@start_link_vertices);
 
 
 
-my $insert_column = 'vcFlowId,vcFlowTitle,vcFlowDescription,vcFlowPassword,vcTaskPassword,iWorkNumber,iCaseNumber,iTerminalNumber,iX,iY,vcStartLinkTarget,txStartLinkVertices,iGoalX,iGoalY,iPaperHieght,vcLoginInfo,vcEnablePassword,iCreateAt,iUpdateTime';
+my $insert_column = 'vcFlowId,vcFlowTitle,vcFlowDescription,vcFlowPassword,vcTaskPassword,iWorkNumber,iCaseNumber,iTerminalNumber,iX,iY,vcStartLinkTarget,txStartLinkVertices,iGoalX,iGoalY,iPaperHieght,vcLoginInfo,vcEnablePassword,iCreateTime,iUpdateTime';
 my @values = ("('" . $flow_id . "','" . &Common_sub::escape_sql($title) . "','','" . $encoded_flow_password  . "','" . $encoded_task_password . "',0,0,0," . $x . "," . $y . ",'" . $json_start_link_target . "','" . $json_start_link_vertices . "'," . $goal_x . "," . $goal_y . "," . $paper_height . ",'',''," . $time . "," . $time . ")");
 my $table = 'T_Flow';
 $access2db -> set_insert($insert_column, \@values, $table);

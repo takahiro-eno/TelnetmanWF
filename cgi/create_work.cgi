@@ -91,13 +91,13 @@ $access2db -> update_exe;
 #
 # DB に登録。
 #
-my $insert_column = 'vcFlowId,vcWorkId,vcWorkTitle,vcWorkDescription,iActive,iX,iY,vcOkLinkTarget,vcNgLinkTarget,vcThroughTarget,txOkLinkVertices,txNgLinkVertices,txThroughVertices,iUseParameterSheet,iBondParameterSheet,vcEnablePassword,iCreateAt,iUpdateTime';
+my $insert_column = 'vcFlowId,vcWorkId,vcWorkTitle,vcWorkDescription,iActive,iX,iY,vcOkLinkTarget,vcNgLinkTarget,vcThroughTarget,txOkLinkVertices,txNgLinkVertices,txThroughVertices,iUseParameterSheet,iBondParameterSheet,vcEnablePassword,iCreateTime,iUpdateTime';
 my @values = ("('" . $flow_id . "','" . $work_id . "','" . $title . "','',1," . $x . "," . $y . ",'" . $json_ok_link_target . "','" . $json_ng_link_target . "','" . $json_through_link_target . "','" . $json_ok_link_vertices . "','" . $json_ng_link_vertices . "','" . $json_through_link_vertices . "',0,0,''," . $time . "," . $time . ")");
 $table = 'T_Work';
 $access2db -> set_insert($insert_column, \@values, $table);
 $access2db -> insert_exe;
 
-$insert_column = 'vcFlowId,vcWorkId,vcFlowchartBefore,vcFlowchartMiddle,vcFlowchartAfter,vcLoginInfo,vcSyslogValues,vcDiffValues,vcOptionalLogValues,iCreateAt,iUpdateTime';
+$insert_column = 'vcFlowId,vcWorkId,vcFlowchartBefore,vcFlowchartMiddle,vcFlowchartAfter,vcLoginInfo,vcSyslogValues,vcDiffValues,vcOptionalLogValues,iCreateTime,iUpdateTime';
 @values = ("('" . $flow_id . "','" . $work_id  . "','','','','','','',''," . $time . "," . $time . ")");
 $table = 'T_File';
 $access2db -> set_insert($insert_column, \@values, $table);

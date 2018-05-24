@@ -101,7 +101,7 @@ if($offset < 0){
 #
 $select_column = 'vcFlowId,vcFlowTitle';
 $table         = 'T_Flow';
-$condition     = $title_condition . 'order by iCreateAt limit ' . $offset . ',' . $limit;
+$condition     = $title_condition . 'order by iCreateTime limit ' . $offset . ',' . $limit;
 $access2db -> set_select($select_column, $table, $condition);
 my $ref_flow = $access2db -> select_array_cols;
 
@@ -127,7 +127,7 @@ foreach my $ref_row (@$ref_flow){
 #
 $select_column = 'vcFlowId,vcTaskId,vcTaskTitle';
 $table         = 'T_Task';
-$condition     = "where vcFlowId in ('" . join("','", @flow_id_list) . "') and iActive = 1 order by iCreateAt";
+$condition     = "where vcFlowId in ('" . join("','", @flow_id_list) . "') and iActive = 1 order by iCreateTime";
 $access2db -> set_select($select_column, $table, $condition);
 my $ref_task = $access2db -> select_array_cols;
 

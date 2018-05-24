@@ -71,7 +71,7 @@ my $task_id = &main::make_task_id($access2db);
 
 
 
-my $insert_column = 'vcFlowId,vcTaskId,vcTaskTitle,vcTaskDescription,iActive,iStatus,iCreateAt,iUpdateTime';
+my $insert_column = 'vcFlowId,vcTaskId,vcTaskTitle,vcTaskDescription,iActive,iStatus,iCreateTime,iUpdateTime';
 my @values = ("('" . $flow_id . "','" . $task_id . "','" . $title . "','',1,0," . $time . "," . $time . ")");
 $table = 'T_Task';
 $access2db -> set_insert($insert_column, \@values, $table);

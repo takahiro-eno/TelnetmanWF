@@ -83,7 +83,7 @@ $access2db -> update_exe;
 #
 # DB に登録。
 #
-my $insert_column = 'vcFlowId,vcTerminalId,vcTerminalTitle,vcTerminalDescription,iActive,iX,iY,iCreateAt,iUpdateTime';
+my $insert_column = 'vcFlowId,vcTerminalId,vcTerminalTitle,vcTerminalDescription,iActive,iX,iY,iCreateTime,iUpdateTime';
 my @values = ("('" . $flow_id . "','" . $terminal_id . "','" . $title . "','',1," . $x . "," . $y . "," . $time . "," . $time . ")");
 $table = 'T_Terminal';
 $access2db -> set_insert($insert_column, \@values, $table);

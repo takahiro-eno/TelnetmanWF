@@ -220,7 +220,7 @@ sub make_values {
   my $value = $ref_value_list -> {$column_name};
   
   if($column_name =~ /^i/){
-   if(($import_type == 1) && (($column_name eq 'iCreateAt') || ($column_name eq 'iUpdateTime'))){
+   if(($import_type == 1) && (($column_name eq 'iCreateTime') || ($column_name eq 'iUpdateTime'))){
     push(@values, $time);
    }
    else{

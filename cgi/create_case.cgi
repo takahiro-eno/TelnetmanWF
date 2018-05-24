@@ -103,7 +103,7 @@ $access2db -> update_exe;
 #
 # DB に登録。
 #
-my $insert_column = 'vcFlowId,vcCaseId,vcCaseTitle,vcCaseDescription,iActive,iX,iY,txLinkTargetList,txLinkLabelList,txLinkVerticesList,txParameterConditions,iCreateAt,iUpdateTime';
+my $insert_column = 'vcFlowId,vcCaseId,vcCaseTitle,vcCaseDescription,iActive,iX,iY,txLinkTargetList,txLinkLabelList,txLinkVerticesList,txParameterConditions,iCreateTime,iUpdateTime';
 my @values = ("('" . $flow_id . "','" . $case_id . "','" . $title . "','',1," . $x . "," . $y . ",'" . $json_link_target_list . "','" . $json_link_label_list . "','" . $json_link_vertices_list . "','" . $json_parameter_conditions . "'," . $time . "," . $time . ")");
 $table = 'T_Case';
 $access2db -> set_insert($insert_column, \@values, $table);

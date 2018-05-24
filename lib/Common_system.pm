@@ -190,19 +190,19 @@ sub column_name_list {
  my $table_name = $_[0];
  
  if($table_name eq 'T_Flow'){
-  return('vcFlowId', 'vcFlowTitle', 'vcFlowDescription', 'vcFlowPassword', 'vcTaskPassword', 'iWorkNumber', 'iCaseNumber', 'iTerminalNumber', 'iX', 'iY', 'vcStartLinkTarget', 'txStartLinkVertices', 'iGoalX', 'iGoalY', 'iPaperHieght', 'vcLoginInfo', 'vcEnablePassword', 'iCreateAt', 'iUpdateTime');
+  return('vcFlowId', 'vcFlowTitle', 'vcFlowDescription', 'vcFlowPassword', 'vcTaskPassword', 'iWorkNumber', 'iCaseNumber', 'iTerminalNumber', 'iX', 'iY', 'vcStartLinkTarget', 'txStartLinkVertices', 'iGoalX', 'iGoalY', 'iPaperHieght', 'vcLoginInfo', 'vcEnablePassword', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_Work'){
-  return('vcFlowId', 'vcWorkId', 'vcWorkTitle', 'vcWorkDescription', 'iActive', 'iX', 'iY', 'vcOkLinkTarget', 'vcNgLinkTarget', 'vcThroughTarget', 'txOkLinkVertices', 'txNgLinkVertices', 'txThroughVertices', 'iUseParameterSheet', 'iBondParameterSheet', 'vcEnablePassword', 'iCreateAt', 'iUpdateTime');
+  return('vcFlowId', 'vcWorkId', 'vcWorkTitle', 'vcWorkDescription', 'iActive', 'iX', 'iY', 'vcOkLinkTarget', 'vcNgLinkTarget', 'vcThroughTarget', 'txOkLinkVertices', 'txNgLinkVertices', 'txThroughVertices', 'iUseParameterSheet', 'iBondParameterSheet', 'vcEnablePassword', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_Case'){
-  return('vcFlowId', 'vcCaseId', 'vcCaseTitle', 'vcCaseDescription', 'iActive', 'iX', 'iY', 'txLinkTargetList', 'txLinkLabelList', 'txLinkVerticesList', 'txParameterConditions', 'iCreateAt', 'iUpdateTime');
+  return('vcFlowId', 'vcCaseId', 'vcCaseTitle', 'vcCaseDescription', 'iActive', 'iX', 'iY', 'txLinkTargetList', 'txLinkLabelList', 'txLinkVerticesList', 'txParameterConditions', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_Terminal'){
-  return('vcFlowId', 'vcTerminalId', 'vcTerminalTitle', 'vcTerminalDescription', 'iActive', 'iX', 'iY', 'iCreateAt', 'iUpdateTime');
+  return('vcFlowId', 'vcTerminalId', 'vcTerminalTitle', 'vcTerminalDescription', 'iActive', 'iX', 'iY', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_File'){
-  return('vcFlowId', 'vcWorkId', 'vcFlowchartBefore', 'vcFlowchartMiddle', 'vcFlowchartAfter', 'vcLoginInfo', 'vcSyslogValues', 'vcDiffValues', 'vcOptionalLogValues', 'iCreateAt', 'iUpdateTime');
+  return('vcFlowId', 'vcWorkId', 'vcFlowchartBefore', 'vcFlowchartMiddle', 'vcFlowchartAfter', 'vcLoginInfo', 'vcSyslogValues', 'vcDiffValues', 'vcOptionalLogValues', 'iCreateTime', 'iUpdateTime');
  }
 }
 

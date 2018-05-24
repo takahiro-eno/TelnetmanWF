@@ -292,7 +292,7 @@ sub update_status {
    $json_target_id_list = &JSON::to_json($ref_target_id_list);
   }
   
-  my $insert_column = 'vcFlowId,vcTaskId,vcBoxId,iStatus,vcLoginId,vcSessionId,vcTargetIdList,iCreateAt,iUpdateTime';
+  my $insert_column = 'vcFlowId,vcTaskId,vcBoxId,iStatus,vcLoginId,vcSessionId,vcTargetIdList,iCreateTime,iUpdateTime';
   my @values = ("('" . $flow_id . "','" . $task_id . "','" . $box_id . "'," . $status . ",'" . $login_id . "','" . $session_id . "','" . $json_target_id_list . "'," . $time . "," . $time .")");
   $access2db -> set_insert($insert_column, \@values, $table);
   $access2db -> insert_exe;
