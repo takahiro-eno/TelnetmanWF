@@ -1,5 +1,19 @@
+CentOS7 を最小構成でインストール
+sudo yum -y update
+
+--------------------------------------------------------------------------------
+【SELinux 停止】
+sudo vi /etc/selinux/config
+編集
+============================================================
+SELINUX=disabled
+============================================================
+
+
+
+--------------------------------------------------------------------------------
 【yum】
-sudo yum -y install mlocate traceroute wget zip unzip epel-release
+sudo yum -y install telnet mlocate traceroute tcpdump wget zip unzip epel-release git
 
 sudo yum -y install perl-CGI \
 perl-JSON \
@@ -252,39 +266,39 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON TelnetmanWF.* TO 'telnetmanWF'@'localhost' 
 
 
 create table T_Flow(
-vcFlowId varchar(64) not null primary key,
-vcFlowTitle varchar(128),
-vcFlowDescription varchar(1024),
-vcFlowPassword varchar(64),
-vcTaskPassword varchar(64),
-iWorkNumber int unsigned,
-iCaseNumber int unsigned,
-iTerminalNumber int unsigned,
-iX int unsigned,
-iY int unsigned,
-vcStartLinkTarget varchar(32),
-txStartLinkVertices text,
-iGoalX int unsigned,
-iGoalY int unsigned,
-iPaperHieght int unsigned,
-vcLoginInfo varchar(256),
-vcEnablePassword varchar(32),
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64) not null primary key,
+ vcFlowTitle varchar(128),
+ vcFlowDescription varchar(1024),
+ vcFlowPassword varchar(64),
+ vcTaskPassword varchar(64),
+ iWorkNumber int unsigned,
+ iCaseNumber int unsigned,
+ iTerminalNumber int unsigned,
+ iX int unsigned,
+ iY int unsigned,
+ vcStartLinkTarget varchar(32),
+ txStartLinkVertices text,
+ iGoalX int unsigned,
+ iGoalY int unsigned,
+ iPaperHieght int unsigned,
+ vcLoginInfo varchar(256),
+ vcEnablePassword varchar(32),
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 
 
 
 
 create table T_Task(
-vcFlowId varchar(64) not null,
-vcTaskId varchar(64),
-vcTaskTitle varchar(128),
-vcTaskDescription varchar(1024),
-iActive tinyint unsigned,
-iStatus tinyint unsigned,
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64) not null,
+ vcTaskId varchar(64),
+ vcTaskTitle varchar(128),
+ vcTaskDescription varchar(1024),
+ iActive tinyint unsigned,
+ iStatus tinyint unsigned,
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 alter table T_Task add index IDX_Task (vcFlowId);
 
@@ -292,15 +306,15 @@ alter table T_Task add index IDX_Task (vcFlowId);
 
 
 create table T_LastStatus(
-vcFlowId varchar(64) not null,
-vcTaskId varchar(64) not null,
-vcBoxId varchar(64),
-iStatus tinyint unsigned,
-vcLoginId varchar(128),
-vcSessionId varchar(128),
-vcTargetIdList varchar(128),
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64) not null,
+ vcTaskId varchar(64) not null,
+ vcBoxId varchar(64),
+ iStatus tinyint unsigned,
+ vcLoginId varchar(128),
+ vcSessionId varchar(128),
+ vcTargetIdList varchar(128),
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 alter table T_LastStatus add index IDX_LastStatus (vcFlowId,vcTaskId);
 
@@ -308,24 +322,24 @@ alter table T_LastStatus add index IDX_LastStatus (vcFlowId,vcTaskId);
 
 
 create table T_Work(
-vcFlowId varchar(64) not null,
-vcWorkId varchar(64),
-vcWorkTitle varchar(128),
-vcWorkDescription varchar(1024),
-iActive int unsigned,
-iX int unsigned,
-iY int unsigned,
-vcOkLinkTarget varchar(32),
-vcNgLinkTarget varchar(32),
-vcThroughTarget varchar(32),
-txOkLinkVertices text,
-txNgLinkVertices text,
-txThroughVertices text,
-iUseParameterSheet tinyint unsigned,
-iBondParameterSheet tinyint unsigned,
-vcEnablePassword varchar(32),
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64) not null,
+ vcWorkId varchar(64),
+ vcWorkTitle varchar(128),
+ vcWorkDescription varchar(1024),
+ iActive int unsigned,
+ iX int unsigned,
+ iY int unsigned,
+ vcOkLinkTarget varchar(32),
+ vcNgLinkTarget varchar(32),
+ vcThroughTarget varchar(32),
+ txOkLinkVertices text,
+ txNgLinkVertices text,
+ txThroughVertices text,
+ iUseParameterSheet tinyint unsigned,
+ iBondParameterSheet tinyint unsigned,
+ vcEnablePassword varchar(32),
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 alter table T_Work add index IDX_Work (vcFlowId);
 
@@ -333,19 +347,19 @@ alter table T_Work add index IDX_Work (vcFlowId);
 
 
 create table T_Case(
-vcFlowId varchar(64) not null,
-vcCaseId varchar(64),
-vcCaseTitle varchar(128),
-vcCaseDescription varchar(1024),
-iActive int unsigned,
-iX int unsigned,
-iY int unsigned,
-txLinkTargetList text,
-txLinkLabelList text,
-txLinkVerticesList text,
-txParameterConditions text,
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64) not null,
+ vcCaseId varchar(64),
+ vcCaseTitle varchar(128),
+ vcCaseDescription varchar(1024),
+ iActive int unsigned,
+ iX int unsigned,
+ iY int unsigned,
+ txLinkTargetList text,
+ txLinkLabelList text,
+ txLinkVerticesList text,
+ txParameterConditions text,
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 alter table T_Case add index IDX_Case (vcFlowId);
 
@@ -353,32 +367,32 @@ alter table T_Case add index IDX_Case (vcFlowId);
 
 
 create table T_Terminal(
-vcFlowId varchar(64),
-vcTerminalId varchar(64),
-vcTerminalTitle varchar(128),
-vcTerminalDescription varchar(1024),
-iActive int unsigned,
-iX int unsigned,
-iY int unsigned,
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64),
+ vcTerminalId varchar(64),
+ vcTerminalTitle varchar(128),
+ vcTerminalDescription varchar(1024),
+ iActive int unsigned,
+ iX int unsigned,
+ iY int unsigned,
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 alter table T_Terminal add index IDX_Terminal (vcFlowId);
 
 
 
 create table T_File(
-vcFlowId varchar(64) not null,
-vcWorkId varchar(64),
-vcFlowchartBefore varchar(256),
-vcFlowchartMiddle varchar(256),
-vcFlowchartAfter varchar(256),
-vcLoginInfo varchar(256),
-vcSyslogValues varchar(256),
-vcDiffValues varchar(256),
-vcOptionalLogValues varchar(256),
-iCreateTime int unsigned,
-iUpdateTime int unsigned
+ vcFlowId varchar(64) not null,
+ vcWorkId varchar(64),
+ vcFlowchartBefore varchar(256),
+ vcFlowchartMiddle varchar(256),
+ vcFlowchartAfter varchar(256),
+ vcLoginInfo varchar(256),
+ vcSyslogValues varchar(256),
+ vcDiffValues varchar(256),
+ vcOptionalLogValues varchar(256),
+ iCreateTime int unsigned,
+ iUpdateTime int unsigned
 );
 alter table T_File add index IDX_File (vcFlowId);
 
@@ -398,3 +412,5 @@ sudo vi /etc/cron.d/TelnetmanWF.cron
 
 
 --------------------------------------------------------------------------------
+【URL】
+https://<サーバーアドレス>/Telnetman2/
