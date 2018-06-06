@@ -53,7 +53,6 @@ div.drag_and_drop_zone img {
 }
 
 
-
 div.condition_zone {
  width : 266px;
  border : 1px dashed #c0ccc0;
@@ -74,6 +73,43 @@ div.condition_zone h2 span {
 div.condition_zone p {
  margin : 2px;
  white-space : nowrap;
+}
+
+
+
+/* -------------------------------------- */
+/* additional parametersheet radio button */
+/* -------------------------------------- */
+span.additional_parametersheet{
+ margin : 4px;
+}
+
+span.additional_parametersheet input[type="radio"] {
+ display: none;
+}
+
+span.additional_parametersheet label{
+ margin : 0;
+ padding : 4px 8px 4px 8px;
+ border : 1px solid #c9d0c9;
+ background: #e9f0e0;
+ color: #99a069;
+ font-size: 11px;
+ text-align: center;
+ transition: .2s;
+}
+
+span.additional_parametersheet label:first-of-type{
+ border-radius: 5px 0 0 5px;
+}
+
+span.additional_parametersheet label:last-of-type{
+ border-radius: 0 5px 5px 0;
+}
+
+span.additional_parametersheet input[type="radio"]:checked + label {
+ background-color: #80b040;
+ color: #f0fff0;
 }
 
 

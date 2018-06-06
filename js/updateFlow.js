@@ -652,9 +652,11 @@ function updateFlow (){
         var elTd71   = document.createElement("td");
         var elTd72   = document.createElement("td");
         var elSpan71 = document.createElement("span");
+        var elSpan72 = document.createElement("span");
         var elInput72 = document.createElement("input");
         var elInput73 = document.createElement("input");
         elSpan71.innerHTML = "追加パラメーターシートを";
+        elSpan72.className = "additional_parametersheet";
         elInput72.setAttribute("type", "radio");
         elInput72.setAttribute("id", objUpdateFlow.idInputOkLog(workId, 0));
         elInput72.setAttribute("name", objUpdateFlow.idInputOkLog(workId));
@@ -673,13 +675,14 @@ function updateFlow (){
         var elLabel73 = document.createElement("label");
         elLabel72.setAttribute("for", objUpdateFlow.idInputOkLog(workId, 0));
         elLabel73.setAttribute("for", objUpdateFlow.idInputOkLog(workId, 1));
-        elLabel72.innerHTML = "破棄する。";
-        elLabel73.innerHTML = "結合して次へ。";
+        elLabel72.innerHTML = "破棄";
+        elLabel73.innerHTML = "結合";
         elTd71.appendChild(elSpan71);
-        elTd72.appendChild(elInput72);
-        elTd72.appendChild(elLabel72);
-        elTd72.appendChild(elInput73);
-        elTd72.appendChild(elLabel73);
+        elSpan72.appendChild(elInput72);
+        elSpan72.appendChild(elLabel72);
+        elSpan72.appendChild(elInput73);
+        elSpan72.appendChild(elLabel73);
+        elTd72.appendChild(elSpan72);
         elTr7.appendChild(elTd71);
         elTr7.appendChild(elTd72);
         
