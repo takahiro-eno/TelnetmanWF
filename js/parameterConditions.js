@@ -186,6 +186,7 @@ function parameterConditions (){
   elInput.style.width = "96px";
   //elInput.setAttribute("size", "16");
   elInput.setAttribute("spellcheck", "false");
+  elInput.setAttribute("autocomplete", "off");
   elInput.setAttribute("id", this.idConditionLabel(N));
   elInput.value = this.linkLabelList[N];
   elInput.onblur = new Function("objParameterConditions.readLabel(" + N + ")");
@@ -245,6 +246,7 @@ function parameterConditions (){
   elInput.style.width = "120px";
   //elInput.setAttribute("size", "20");
   elInput.setAttribute("spellcheck", "false");
+  elInput.setAttribute("autocomplete", "off");
   elInput.setAttribute("id", this.idCondition(N, x, y));
   elInput.setAttribute("value", "");
   elInput.onblur = new Function("objParameterConditions.readConditon(" + N + "," + x + "," + y + ")");
