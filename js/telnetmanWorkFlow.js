@@ -1560,16 +1560,14 @@ function telnetmanWorkFlow (){
        var result = hashResult["result"];
        
        if(result === 1){
-        document.getElementById(objTelnetmanWorkFlow.idNewTitle).value    = "";
-        document.getElementById(objTelnetmanWorkFlow.idNewFlowPassword).value = "";
-        document.getElementById(objTelnetmanWorkFlow.idNewTaskPassword).value = "";
-        
         var pageType = hashResult["page_type"];
         var title    = hashResult["title"];
         var flowPassword = hashResult["flow_password"];
         var taskPassword = hashResult["task_password"];
         
         if(title.length > 0){
+         document.getElementById(objTelnetmanWorkFlow.idNewTitle).value    = "";
+         
          if(pageType === "flow"){
           document.getElementById(objTelnetmanWorkFlow.idFlowTitleArea).innerHTML = title;
          }
@@ -1577,9 +1575,12 @@ function telnetmanWorkFlow (){
           document.getElementById(objTelnetmanWorkFlow.idTaskTitleArea).innerHTML = title;
          }
         }
-        
-        if(flowPassword.length > 0){
+        else if(flowPassword.length > 0){
+         document.getElementById(objTelnetmanWorkFlow.idNewFlowPassword).value = "";
          objControleStorageS.setFlowPassword(flowPassword);
+        }
+        else if(taskPassword.length > 0){
+         document.getElementById(objTelnetmanWorkFlow.idNewTaskPassword).value = "";
         }
        }
        else{
