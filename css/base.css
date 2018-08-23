@@ -34,6 +34,11 @@ span.red {
  color : #ff3333;
 }
 
+p.input {
+ margin : 2px;
+ padding : 0px;
+}
+
 a:link    {color: #6060ff; text-decoration:none;}
 a:visited {color: #6060ff; text-decoration:none;}
 a:active  {color: #ff60ff; text-decoration:none;}
@@ -66,6 +71,24 @@ td.center {
 
 td.right {
  text-align : right;
+}
+
+div.left {
+ position : relative;
+ float : left;
+ margin : 0px;
+ padding : 2px;
+}
+
+ul.normal {
+ list-style-type : none;
+ margin : 0px;
+ padding : 0px;
+}
+
+ul.normal li {
+ margin : 0px;
+ padding : 2px;
 }
 
 label {

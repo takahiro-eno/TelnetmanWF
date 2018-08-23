@@ -74,13 +74,7 @@ my $description          = $ref_terminal -> [1];
 #
 # パラメーターシートが存在するかどうか確認する。
 #
-my $update_time = 0;
-my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $terminal_id);
-my $exists_parameter_sheet = 0;
-if(-f $file_parameter_sheet){
- $exists_parameter_sheet = 1;
- $update_time = (stat($file_parameter_sheet))[9];
-}
+my ($exists_parameter_sheet, $file_parameter_sheet, $update_time) = &TelnetmanWF_common::exists_parameter_sheet($flow_id, $task_id, $terminal_id);
 
 
 
@@ -89,13 +83,13 @@ if(-f $file_parameter_sheet){
 #
 my %results = (
  'result' => 1,
- 'flow_id' => $flow_id,
- 'task_id' => $task_id,
+ 'flow_id'     => $flow_id,
+ 'task_id'     => $task_id,
  'terminal_id' => $terminal_id,
- 'title' => $title,
+ 'title'       => $title,
  'description' => $description,
  'exists_parameter_sheet' => $exists_parameter_sheet,
- 'update_time' => $update_time
+ 'update_time'            => $update_time
 );
 
 

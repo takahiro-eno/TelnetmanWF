@@ -2,6 +2,7 @@
 # 説明   : terminal のデータを取得する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/02
+# 更新   : 2018/07/02 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -43,7 +44,6 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
 
 
 
@@ -54,7 +54,7 @@ my $terminal_id = $cgi -> param('terminal_id');
 #
 # terminal data を取り出す。
 #
-my $select_column = 'vcTerminalTitle,vcTerminalDescription,iUpdateTime';
+my $select_column = 'vcTerminalTitle,vcTerminalDescription,vcAutoExecBoxId,iUpdateTime';
 my $table         = 'T_Terminal';
 my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTerminalId = '" . $terminal_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
@@ -68,7 +68,8 @@ $access2db -> close;
 
 my $title                = $ref_terminal -> [0];
 my $description          = $ref_terminal -> [1];
-my $update_time          = $ref_terminal -> [2];
+my $auto_exec_box_id     = $ref_terminal -> [2];
+my $update_time          = $ref_terminal -> [3];
 
 $update_time += 0;
 
@@ -78,12 +79,13 @@ $update_time += 0;
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'terminal_id' => $terminal_id,
- 'title' => $title,
- 'description' => $description,
- 'update_time' => $update_time
+ 'result'           => 1,
+ 'flow_id'          => $flow_id,
+ 'terminal_id'      => $terminal_id,
+ 'title'            => $title,
+ 'description'      => $description,
+ 'auto_exec_box_id' => $auto_exec_box_id,
+ 'update_time'      => $update_time
 );
 
 my $json_results = &JSON::to_json(\%results);

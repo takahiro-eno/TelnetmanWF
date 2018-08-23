@@ -4,6 +4,8 @@
 # 作成日 : 2015/05/12
 # 更新   : 2015/12/24 syslog 確認のJSON を取り込めるように。
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
+# 更新   : 2018/06/27 user, password を追加。iExecOnlyOne, vcAutoExecBoxId を追加。
+# 更新   : 2018/08/15 個別パラメーターシートを廃止。
 
 use strict;
 use warnings;
@@ -45,7 +47,6 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
 
 
 
@@ -56,7 +57,7 @@ my $work_id = $cgi -> param('work_id');
 #
 # work data を取り出す。
 #
-my $select_column = 'vcWorkTitle,vcWorkDescription,iUseParameterSheet,iBondParameterSheet,vcEnablePassword,iUpdateTime';
+my $select_column = 'vcWorkTitle,vcWorkDescription,iExecOnlyOne,vcAutoExecBoxId,iBondParameterSheet,vcUser,vcPassword,vcEnablePassword,iUpdateTime';
 my $table         = 'T_Work';
 my $condition     = "where vcFlowId = '" . $flow_id . "' and vcWorkId = '" . $work_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
@@ -79,12 +80,15 @@ $access2db -> close;
 
 
 
-my $title                = $ref_work -> [0];
-my $description          = $ref_work -> [1];
-my $use_parameter_sheet  = $ref_work -> [2];
-my $bond_parameter_sheet = $ref_work -> [3];
-my $enable_password      = $ref_work -> [4];
-my $update_time          = $ref_work -> [5];
+my $title                   = $ref_work -> [0];
+my $description             = $ref_work -> [1];
+my $exec_only_one           = $ref_work -> [2];
+my $auto_exec_box_id        = $ref_work -> [3];
+my $bond_parameter_sheet    = $ref_work -> [4];
+my $user                    = $ref_work -> [5];
+my $encoded_password        = $ref_work -> [6];
+my $encoded_enable_password = $ref_work -> [7];
+my $update_time             = $ref_work -> [8];
 my $flowchart_before    = $ref_file -> [0]; 
 my $flowchart_middle    = $ref_file -> [1]; 
 my $flowchart_after     = $ref_file -> [2]; 
@@ -93,9 +97,12 @@ my $syslog_values       = $ref_file -> [4];
 my $diff_values         = $ref_file -> [5]; 
 my $optional_log_values = $ref_file -> [6]; 
 
-$use_parameter_sheet += 0;
+my $password        = &TelnetmanWF_common::decode_password($encoded_password);
+my $enable_password = &TelnetmanWF_common::decode_password($encoded_enable_password);
+
 $bond_parameter_sheet += 0;
 $update_time += 0;
+$exec_only_one += 0;
 
 
 
@@ -108,8 +115,11 @@ my %results = (
  'work_id'              => $work_id,
  'title'                => $title,
  'description'          => $description,
- 'use_parameter_sheet'  => $use_parameter_sheet,
+ 'exec_only_one'        => $exec_only_one,
+ 'auto_exec_box_id'     => $auto_exec_box_id,
  'bond_parameter_sheet' => $bond_parameter_sheet,
+ 'user'                 => $user,
+ 'password'             => $password,
  'enable_password'      => $enable_password,
  'update_time'          => $update_time,
  'flowchart_before'     => $flowchart_before,

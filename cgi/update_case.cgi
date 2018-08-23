@@ -2,6 +2,7 @@
 # 説明   : case のタイトル、説明と分岐条件配置を更新する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/16
+# 更新   : 2018/06/29 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -45,7 +46,6 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
 
 
 
@@ -81,8 +81,21 @@ my $json_start_link_vertices = &JSON::to_json($start_link_vertices);
 my $case_id          = $cgi -> param('case_id');
 my $case_title       = $cgi -> param('case_title');
 my $case_description = $cgi -> param('case_description');
+my $auto_exec_box_id = $cgi -> param('auto_exec_box_id');
 my $json_link_label_list      = $cgi -> param('json_link_label_list');
 my $json_parameter_conditions = $cgi -> param('json_parameter_conditions');
+
+unless(defined($case_title)){
+ $case_title = '';
+}
+
+unless(defined($case_description)){
+ $case_description = '';
+}
+
+unless(defined($auto_exec_box_id)){
+ $auto_exec_box_id = '';
+}
 
 
 
@@ -176,6 +189,7 @@ while(my ($_case_id, $ref_case_data) = each(%$case_list)){
  if($_case_id eq $case_id){
   push(@set, "vcCaseTitle = '" . &Common_sub::escape_sql($case_title) . "'");
   push(@set, "vcCaseDescription = '" . &Common_sub::escape_sql($case_description) . "'");
+  push(@set, "vcAutoExecBoxId = '" . $auto_exec_box_id . "'");
   push(@set, "txLinkLabelList = '" . &Common_sub::escape_sql($json_link_label_list) . "'");
   push(@set, "txParameterConditions = '" . &Common_sub::escape_sql($json_parameter_conditions) . "'");
   push(@set, 'iUpdateTime = ' . $time);

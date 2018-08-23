@@ -2,6 +2,7 @@
 # 説明   : tmp ディレクトリにある全フローデータを正規の場所に移動させる。
 # 作成者 : 江野高広
 # 作成日 : 2015/08/21
+# 更新   : 2018/08/20 旧バージョンのデータの場合はenable password をエンコードする仕様に。
 
 use strict;
 use warnings;
@@ -139,18 +140,26 @@ close(JSON);
 
 my $ref_db_data = &JSON::from_json($json_db_data);
 
+# データのバージョン確認
+my $version = '';
+if(exists($ref_db_data -> {'version'})){
+ $version = $ref_db_data -> {'version'};
+ delete($ref_db_data -> {'version'});
+}
+
+
 foreach my $table ('T_Flow', 'T_Work', 'T_Case', 'T_Terminal', 'T_File'){
  my @column_name_list = &Common_system::column_name_list($table);
  my $insert_column = join(',', @column_name_list);
  my @values = ();
  
  if($table eq 'T_Flow'){
-  my $text_values = &main::make_values($import_type, $time, $new_flow_id, \@column_name_list, $ref_db_data -> {$table});
+  my $text_values = &main::make_values($import_type, $time, $new_flow_id, \@column_name_list, $ref_db_data -> {$table}, $version);
   push(@values, $text_values);
  }
  else{
   foreach my $ref_rows (@{$ref_db_data -> {$table}}){
-   my $text_values = &main::make_values($import_type, $time, $new_flow_id, \@column_name_list, $ref_rows);
+   my $text_values = &main::make_values($import_type, $time, $new_flow_id, \@column_name_list, $ref_rows, $version);
    push(@values, $text_values);
   }
  }
@@ -189,10 +198,10 @@ unless(-d $dir_log_root){
 $import_type += 0;
 my $flow_title = $ref_db_data -> {'T_Flow'} -> {'vcFlowTitle'};
 my %results = (
- 'result' => 1,
+ 'result'      => 1,
  'import_type' => $import_type,
- 'flow_id' => $new_flow_id,
- 'flow_title' => $flow_title
+ 'flow_id'     => $new_flow_id,
+ 'flow_title'  => $flow_title
 );
 
 if($import_type == 1){
@@ -209,15 +218,30 @@ print $json_results;
 
 
 sub make_values {
- my $import_type = $_[0];
- my $time = $_[1];
- my $flow_id = $_[2];
+ my $import_type          = $_[0];
+ my $time                 = $_[1];
+ my $flow_id              = $_[2];
  my $ref_column_name_list = $_[3];
- my $ref_value_list = $_[4];
+ my $ref_value_list       = $_[4];
+ my $version              = $_[5];
  my @values = ();
  
  foreach my $column_name (@$ref_column_name_list){
-  my $value = $ref_value_list -> {$column_name};
+  my $value = "";
+  
+  if(exists($ref_value_list -> {$column_name})){
+   $value = $ref_value_list -> {$column_name};
+  }
+  else{
+   if($column_name =~ /^i/){
+    $value = 0;
+   }
+  }
+  
+  # 旧バージョンの場合はenable password をエンコードする。
+  if((length($version) == 0) && ($column_name eq 'vcEnablePassword')){
+   $value = &TelnetmanWF_common::encode_password($value);
+  }
   
   if($column_name =~ /^i/){
    if(($import_type == 1) && (($column_name eq 'iCreateTime') || ($column_name eq 'iUpdateTime'))){

@@ -183,5 +183,25 @@ function common (){
   return(string);
  };
  
+ // HTML Escape
+ this.escapeHtml = function (string) {
+  if(typeof(string) === "number"){
+   return(string);
+  }
+  else if((string === null) || (string === undefined) || (string.length === 0)){
+   return("");
+  }
+  
+  string = string.replace(/&/g, "&amp;");
+  string = string.replace(/"/g, "&quot;");
+  string = string.replace(/'/g, "&#39;");
+  string = string.replace(/</g, "&lt;");
+  string = string.replace(/>/g, "&gt;");
+  string = string.replace(/ /g, "&nbsp;");
+  string = string.replace(/\\/g, "&yen;");
+  
+  return(string);
+ };
+ 
  return(this);
 }

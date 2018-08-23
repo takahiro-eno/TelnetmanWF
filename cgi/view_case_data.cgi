@@ -2,6 +2,7 @@
 # 説明   : case のデータを取得する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/17
+# 更新   : 2018/08/09  自動実行に対応。
 
 use strict;
 use warnings;
@@ -65,26 +66,22 @@ my $ref_case = $access2db -> select_cols;
 #
 # ステータスを確認
 #
-my ($status, $update_time) = &TelnetmanWF_common::check_status($access2db, $flow_id, $task_id, $case_id);
+my ($status, $error_message, $update_time) = &TelnetmanWF_common::check_case_status($access2db, $flow_id, $task_id, $case_id);
 
 
 
 $access2db -> close;
 
 
-my $title       = $ref_case -> [0];
-my $description = $ref_case -> [1];
+my $title         = $ref_case -> [0];
+my $description   = $ref_case -> [1];
 
 
 
 #
 # パラメーターシートが存在するかどうか確認する。
 #
-my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $case_id);
-my $exists_parameter_sheet = 0;
-if(-f $file_parameter_sheet){
- $exists_parameter_sheet = 1;
-}
+my $exists_parameter_sheet = (&TelnetmanWF_common::exists_parameter_sheet($flow_id, $task_id, $case_id))[0];
 
 
 
@@ -92,15 +89,17 @@ if(-f $file_parameter_sheet){
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'task_id' => $task_id,
- 'case_id' => $case_id,
- 'title' => $title,
- 'description' => $description,
+ 'result'                 => 1,
+ 'flow_id'                => $flow_id,
+ 'task_id'                => $task_id,
+ 'case_id'                => $case_id,
+ 'box_id'                 => $case_id,
+ 'title'                  => $title,
+ 'description'            => $description,
  'exists_parameter_sheet' => $exists_parameter_sheet,
- 'status' => $status,
- 'update_time' => $update_time
+ 'status'                 => $status,
+ 'error_message'          => $error_message,
+ 'update_time'            => $update_time
 );
 
 my $json_results = &JSON::to_json(\%results);

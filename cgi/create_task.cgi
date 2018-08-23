@@ -2,6 +2,7 @@
 # 説明   : task を新規作成する。
 # 作成者 : 江野高広
 # 作成日 : 2015/05/17
+# 更新   : 2018/08/22 iStatus カラムを廃止。task_id をランダムな文字列から通し番号に変更。
 
 use strict;
 use warnings;
@@ -55,9 +56,9 @@ my $select_column = 'count(*)';
 my $table         = 'T_Flow';
 my $condition     = "where vcFlowId = '" . $flow_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
-my $count = $access2db -> select_col1;
+my $count_flow = $access2db -> select_col1;
 
-if($count == 0){
+if($count_flow == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"create":0,"reason":"Flow が存在しません。"}';
  
@@ -67,19 +68,25 @@ if($count == 0){
 
 
 
-my $task_id = &main::make_task_id($access2db);
+my $serial_number = &main::get_serial_number($access2db, $flow_id);
+my $task_id = 'task_' . $serial_number;
 
 
 
-my $insert_column = 'vcFlowId,vcTaskId,vcTaskTitle,vcTaskDescription,iActive,iStatus,iCreateTime,iUpdateTime';
-my @values = ("('" . $flow_id . "','" . $task_id . "','" . $title . "','',1,0," . $time . "," . $time . ")");
+my $insert_column = 'vcFlowId,vcTaskId,vcTaskTitle,iActive,iSerialNumber,iCreateTime,iUpdateTime';
+my @values = ("('" . $flow_id . "','" . $task_id . "','" . &Common_sub::escape_sql($title) . "',1," . $serial_number . "," . $time . "," . $time . ")");
 $table = 'T_Task';
 $access2db -> set_insert($insert_column, \@values, $table);
-$access2db -> insert_exe;
-
-
+my $count_new_task = $access2db -> insert_exe;
 
 $access2db -> close;
+
+if($count_new_task == 0){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"create":0,"reason":"作成に失敗しました。"}';
+ 
+ exit(0);
+}
 
 
 
@@ -87,8 +94,8 @@ $access2db -> close;
 # 結果をまとめる。
 #
 my %results = (
- 'create' => $create,
- 'title' => $title,
+ 'create'  => $create,
+ 'title'   => $title,
  'flow_id' => $flow_id,
  'task_id' => $task_id
 );
@@ -100,30 +107,28 @@ print $json_results;
 
 
 
-
-
 #
-# task id を作る。
+# 通算何個目のtask か確認する。
 #
-sub make_task_id {
+sub get_serial_number {
  my $access2db = $_[0];
+ my $flow_id   = $_[1];
  
- my $task_id = 'task_' . &Common_sub::make_random_string(20);
+ my $select_column = 'count(*)';
+ my $table         = 'T_Task';
+ my $condition     = "where vcFlowId = '" . $flow_id . "'";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $count_task = $access2db -> select_col1;
  
- while(1){
-  my $select_column = 'count(*)';
-  my $table         = 'T_Task';
-  my $condition     = "where vcTaskId = '" . $task_id . "'";
-  $access2db -> set_select($select_column, $table, $condition);
-  my $count = $access2db -> select_col1;
-  
-  if($count == 0){
-   last;
-  }
-  else{
-   $task_id = 'task_' . &Common_sub::make_random_string(20);
-  }
+ if($count_task == 0){
+  return(1);
  }
  
- return($task_id);
+ $select_column = 'max(iSerialNumber)';
+ $access2db -> set_select($select_column, $table, $condition);
+ my $serial_number = $access2db -> select_col1;
+ 
+ $serial_number += 1;
+ 
+ return($serial_number);
 }

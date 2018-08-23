@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/05/12
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
+# 更新   : 2018/06/27 user, password を追加。
 
 use strict;
 use warnings;
@@ -44,7 +45,6 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
 
 
 
@@ -55,7 +55,7 @@ my $box_id = $cgi -> param('box_id');
 #
 # flow のタイトル、説明、デフォルトのloginInfo の名前を取り出す。
 #
-my $select_column = 'vcFlowTitle,vcFlowDescription,vcLoginInfo,vcEnablePassword,iUpdateTime';
+my $select_column = 'vcFlowDescription,vcLoginInfo,vcUser,vcPassword,vcEnablePassword,iUpdateTime';
 my $table         = 'T_Flow';
 my $condition     = "where vcFlowId = '" . $flow_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
@@ -67,14 +67,17 @@ $access2db -> close;
 
 
 
-my $title           = $ref_flow -> [0];
-my $description     = $ref_flow -> [1];
-my $login_info      = $ref_flow -> [2]; 
-my $enable_password = $ref_flow -> [3]; 
-my $update_time     = $ref_flow -> [4];
+my $description             = $ref_flow -> [0];
+my $login_info              = $ref_flow -> [1];
+my $user                    = $ref_flow -> [2];
+my $encoded_password        = $ref_flow -> [3]; 
+my $encoded_enable_password = $ref_flow -> [4]; 
+my $update_time             = $ref_flow -> [5];
 
 $update_time += 0;
 
+my $password        = &TelnetmanWF_common::decode_password($encoded_password);
+my $enable_password = &TelnetmanWF_common::decode_password($encoded_enable_password);
 
 
 #
@@ -84,9 +87,10 @@ my %results = (
  'result'          => 1,
  'flow_id'         => $flow_id,
  'box_id'          => $box_id,
- 'title'           => $title,
  'description'     => $description,
  'login_info'      => $login_info,
+ 'user'            => $user,
+ 'password'        => $password,
  'enable_password' => $enable_password,
  'update_time'     => $update_time
 );

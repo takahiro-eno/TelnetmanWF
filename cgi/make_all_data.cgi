@@ -2,6 +2,7 @@
 # 説明   : flow の全データのZIP を作る。
 # 作成者 : 江野高広
 # 作成日 : 2015/07/28
+# 更新   : 2018/08/20 version 情報を追加。
 
 use strict;
 use warnings;
@@ -123,6 +124,7 @@ foreach my $ref_file (@$ref_file_list){
 }
 
 my %flow_data_all = (
+ 'version' => '2.1.0',
  $table_name_flow     => $ref_flow_data,
  $table_name_work     => \@work_data_list,
  $table_name_case     => \@case_data_list,
@@ -172,7 +174,7 @@ unlink($file_all_data);
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
+ 'result'  => 1,
  'flow_id' => $flow_id
 );
 

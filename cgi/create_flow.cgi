@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/05/06
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
+# 更新   : 2018/07/02 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -78,8 +79,8 @@ my $json_start_link_vertices = &JSON::to_json(\@start_link_vertices);
 
 
 
-my $insert_column = 'vcFlowId,vcFlowTitle,vcFlowDescription,vcFlowPassword,vcTaskPassword,iWorkNumber,iCaseNumber,iTerminalNumber,iX,iY,vcStartLinkTarget,txStartLinkVertices,iGoalX,iGoalY,iPaperHieght,vcLoginInfo,vcEnablePassword,iCreateTime,iUpdateTime';
-my @values = ("('" . $flow_id . "','" . &Common_sub::escape_sql($title) . "','','" . $encoded_flow_password  . "','" . $encoded_task_password . "',0,0,0," . $x . "," . $y . ",'" . $json_start_link_target . "','" . $json_start_link_vertices . "'," . $goal_x . "," . $goal_y . "," . $paper_height . ",'',''," . $time . "," . $time . ")");
+my $insert_column = 'vcFlowId,vcFlowTitle,vcFlowDescription,vcFlowPassword,vcTaskPassword,iWorkNumber,iCaseNumber,iTerminalNumber,iX,iY,vcStartLinkTarget,txStartLinkVertices,iGoalX,iGoalY,vcAutoExecBoxId,iPaperHieght,vcLoginInfo,vcUser,vcPassword,vcEnablePassword,iCreateTime,iUpdateTime';
+my @values = ("('" . $flow_id . "','" . &Common_sub::escape_sql($title) . "','','" . $encoded_flow_password  . "','" . $encoded_task_password . "',0,0,0," . $x . "," . $y . ",'" . $json_start_link_target . "','" . $json_start_link_vertices . "'," . $goal_x . "," . $goal_y . ",''," . $paper_height . ",'','','',''," . $time . "," . $time . ")");
 my $table = 'T_Flow';
 $access2db -> set_insert($insert_column, \@values, $table);
 $access2db -> insert_exe;
@@ -102,8 +103,8 @@ mkdir($dir_log_root,  0755);
 # 結果をまとめる。
 #
 my %results = (
- 'create' => $create,
- 'title' => $title,
+ 'create'  => $create,
+ 'title'   => $title,
  'flow_id' => $flow_id
 );
 

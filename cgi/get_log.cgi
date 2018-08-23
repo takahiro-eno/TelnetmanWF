@@ -25,26 +25,6 @@ my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':'
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
 
 
-=pod
-#
-# パスワードが正しいか確認。
-#
-my $ref_auth = &TelnetmanWF_common::authorize($cgi, $access2db);
-
-if($ref_auth -> {'result'} == 0){
- my $json_results = &JSON::to_json($ref_auth);
- 
- print "Content-type: text/plain; charset=UTF-8\n\n";
- print $json_results;
- 
- $access2db -> close;
- 
- exit(0);
-}
-
-my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
-=cut
 my $flow_id = $cgi -> param('flow_id');
 my $task_id = $cgi -> param('task_id');
 

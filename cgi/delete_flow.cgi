@@ -2,6 +2,7 @@
 # 説明   : flow を削除する。
 # 作成者 : 江野高広
 # 作成日 : 2015/09/07
+# 更新   : 2018/08/21 実行中のタスクがあるかの確認を追加。
 
 use strict;
 use warnings;
@@ -48,15 +49,36 @@ my $flow_id = $ref_auth -> {'flow_id'};
 
 
 #
+# 実行中のタスクがあれば削除させない。
+#
+my $exist_running_work = &TelnetmanWF_common::exist_running_work($access2db, $flow_id);
+
+if($exist_running_work == 1){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"result":0,"reason":"実行中のタスクがあります。"}';
+ 
+ $access2db -> close;
+ exit(0);
+}
+
+
+
+#
 # DB から削除。
 #
 $access2db -> set_delete('T_Flow', "where vcFlowId = '" . $flow_id . "'");
 $access2db -> delete_exe;
 $access2db -> set_delete('T_Task');
 $access2db -> delete_exe;
-$access2db -> set_delete('T_LastStatus');
+$access2db -> set_delete('T_Queue');
+$access2db -> delete_exe;
+$access2db -> set_delete('T_StartList');
+$access2db -> delete_exe;
+$access2db -> set_delete('T_WorkList');
 $access2db -> delete_exe;
 $access2db -> set_delete('T_Work');
+$access2db -> delete_exe;
+$access2db -> set_delete('T_CaseList');
 $access2db -> delete_exe;
 $access2db -> set_delete('T_Case');
 $access2db -> delete_exe;
@@ -85,7 +107,7 @@ my $dir_log_root  = &Common_system::dir_log_root($flow_id);
 # 結果を返す。
 #
 my %results = (
- 'result' => 1,
+ 'result'  => 1,
  'flow_id' => $flow_id
 );
 

@@ -1,17 +1,17 @@
 #!/usr/bin/perl
-# 説明   : Goal のデータを取得する。
+# 説明   : 強制終了フラグを立てる。
 # 作成者 : 江野高広
-# 作成日 : 2018/07/02
+# 作成日 : 2018/08/20
 
 use strict;
 use warnings;
 
 use CGI;
 use JSON;
+use Cache::Memcached;
 
 use lib '/usr/local/TelnetmanWF/lib';
 use Common_system;
-use Common_sub;
 use Access2DB;
 use TelnetmanWF_common;
 
@@ -43,21 +43,15 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-
-
-
-my $box_id = $cgi -> param('box_id');
+my $task_id = $ref_auth -> {'task_id'};
 
 
 
 #
-# goal data を取り出す。
+# 強制終了フラグを立てる。
 #
-my $select_column = 'vcAutoExecBoxId';
-my $table         = 'T_Flow';
-my $condition     = "where vcFlowId = '" . $flow_id . "'";
-$access2db -> set_select($select_column, $table, $condition);
-my $auto_exec_box_id = $access2db -> select_col1;
+my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+my $force_stop = $memcached -> set('force_stop', 1);
 
 
 
@@ -69,13 +63,12 @@ $access2db -> close;
 # 結果をまとめる。
 #
 my %results = (
- 'result'           => 1,
- 'flow_id'          => $flow_id,
- 'box_id'           => $box_id,
- 'auto_exec_box_id' => $auto_exec_box_id
+ 'result'  => 1,
+ 'flow_id' => $flow_id,
+ 'task_id' => $task_id
 );
 
 my $json_results = &JSON::to_json(\%results);
 
 print "Content-type: text/plain; charset=UTF-8\n\n";
-print $json_results;
+print $json_results; 

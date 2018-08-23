@@ -2,6 +2,7 @@
 # 説明   : task のタイトル、説明を取得する。
 # 作成者 : 江野高広
 # 作成日 : 2015/05/12
+# 更新   : 2018/07/20 更新日時確認テーブルをT_StartList に変更。
 
 use strict;
 use warnings;
@@ -52,20 +53,25 @@ my $box_id = $cgi -> param('box_id');
 
 
 #
-# task のタイトル、説明を取り出す。
+# task のタイトルを取り出す。
 #
-my $select_column = 'vcTaskTitle,vcTaskDescription';
+my $select_column = 'vcTaskTitle';
 my $table         = 'T_Task';
 my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
-my $ref_flow = $access2db -> select_cols;
+my $title  = $access2db -> select_col1;
 
 
 
 #
-# ステータスを確認
+# 更新時刻を確認
 #
-my ($status, $update_time) = &TelnetmanWF_common::check_status($access2db, $flow_id, $task_id, $box_id);
+my $status = 2;
+$select_column = 'iUpdateTime';
+$table         = 'T_StartList';
+$condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "'";
+$access2db -> set_select($select_column, $table, $condition);
+my $update_time = $access2db -> select_col1;
 
 
 
@@ -73,8 +79,12 @@ $access2db -> close;
 
 
 
-my $title       = $ref_flow -> [0];
-my $description = $ref_flow -> [1];
+if(length($update_time) > 0){
+ $update_time += 0;
+}
+else{
+ $update_time = 0;
+}
 
 
 
@@ -82,13 +92,12 @@ my $description = $ref_flow -> [1];
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'task_id' => $task_id,
- 'box_id' => $box_id,
- 'title' => $title,
- 'description' => $description,
- 'status' => $status,
+ 'result'      => 1,
+ 'flow_id'     => $flow_id,
+ 'task_id'     => $task_id,
+ 'box_id'      => $box_id,
+ 'title'       => $title,
+ 'status'      => $status,
  'update_time' => $update_time
 );
 

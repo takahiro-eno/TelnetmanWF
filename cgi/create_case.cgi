@@ -2,6 +2,7 @@
 # 説明   : case を新規作成する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/14
+# 更新   : 2018/06/29 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -103,8 +104,8 @@ $access2db -> update_exe;
 #
 # DB に登録。
 #
-my $insert_column = 'vcFlowId,vcCaseId,vcCaseTitle,vcCaseDescription,iActive,iX,iY,txLinkTargetList,txLinkLabelList,txLinkVerticesList,txParameterConditions,iCreateTime,iUpdateTime';
-my @values = ("('" . $flow_id . "','" . $case_id . "','" . $title . "','',1," . $x . "," . $y . ",'" . $json_link_target_list . "','" . $json_link_label_list . "','" . $json_link_vertices_list . "','" . $json_parameter_conditions . "'," . $time . "," . $time . ")");
+my $insert_column = 'vcFlowId,vcCaseId,vcCaseTitle,vcCaseDescription,iActive,iX,iY,vcAutoExecBoxId,txLinkTargetList,txLinkLabelList,txLinkVerticesList,txParameterConditions,iCreateTime,iUpdateTime';
+my @values = ("('" . $flow_id . "','" . $case_id . "','" . $title . "','',1," . $x . "," . $y . ",'','" . $json_link_target_list . "','" . $json_link_label_list . "','" . $json_link_vertices_list . "','" . $json_parameter_conditions . "'," . $time . "," . $time . ")");
 $table = 'T_Case';
 $access2db -> set_insert($insert_column, \@values, $table);
 $access2db -> insert_exe;
@@ -119,9 +120,10 @@ $access2db -> close;
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
+ 'result'  => 1,
  'flow_id' => $flow_id,
- 'case_id' => $case_id
+ 'case_id' => $case_id,
+ 'title'   => $title
 );
 
 my $json_results = &JSON::to_json(\%results);

@@ -4,6 +4,8 @@
 # 作成日 : 2015/05/12
 # 更新   : 2015/12/24 syslog 確認のJSON を取り込めるように。
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
+# 更新   : 2018/06/29 iExecOnlyOne, vcAutoExecBoxId を追加。
+# 更新   : 2018/08/15 個別パラメーターシートを廃止。
 
 use strict;
 use warnings;
@@ -91,8 +93,8 @@ $access2db -> update_exe;
 #
 # DB に登録。
 #
-my $insert_column = 'vcFlowId,vcWorkId,vcWorkTitle,vcWorkDescription,iActive,iX,iY,vcOkLinkTarget,vcNgLinkTarget,vcThroughTarget,txOkLinkVertices,txNgLinkVertices,txThroughVertices,iUseParameterSheet,iBondParameterSheet,vcEnablePassword,iCreateTime,iUpdateTime';
-my @values = ("('" . $flow_id . "','" . $work_id . "','" . $title . "','',1," . $x . "," . $y . ",'" . $json_ok_link_target . "','" . $json_ng_link_target . "','" . $json_through_link_target . "','" . $json_ok_link_vertices . "','" . $json_ng_link_vertices . "','" . $json_through_link_vertices . "',0,0,''," . $time . "," . $time . ")");
+my $insert_column = 'vcFlowId,vcWorkId,vcWorkTitle,vcWorkDescription,iActive,iX,iY,vcAutoExecBoxId,iExecOnlyOne,vcOkLinkTarget,vcNgLinkTarget,vcThroughTarget,txOkLinkVertices,txNgLinkVertices,txThroughVertices,iBondParameterSheet,vcUser,vcPassword,vcEnablePassword,iCreateTime,iUpdateTime';
+my @values = ("('" . $flow_id . "','" . $work_id . "','" . $title . "','',1," . $x . "," . $y . ",'',0,'" . $json_ok_link_target . "','" . $json_ng_link_target . "','" . $json_through_link_target . "','" . $json_ok_link_vertices . "','" . $json_ng_link_vertices . "','" . $json_through_link_vertices . "',0,'','',''," . $time . "," . $time . ")");
 $table = 'T_Work';
 $access2db -> set_insert($insert_column, \@values, $table);
 $access2db -> insert_exe;
@@ -120,9 +122,10 @@ mkdir($dir_data, 0755);
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
+ 'result'  => 1,
  'flow_id' => $flow_id,
- 'work_id' => $work_id
+ 'work_id' => $work_id,
+ 'title'   => $title
 );
 
 my $json_results = &JSON::to_json(\%results);

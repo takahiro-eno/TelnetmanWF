@@ -50,7 +50,10 @@
 <td><input type='password' style='width:112px;' id='new_task_password' value=''><button class='enable' onclick='objTelnetmanWorkFlow.updateTitlePassword("task_password");'>実行パスワード変更</button></td>
 </tr>
 <tr>
-<td><input type='password' style='width:50px;' id='enable_password' value=''><button class='enable' onclick='objUpdateFlow.updateEnablePassword();'>enable&nbsp;password&nbsp;一括変更</button></td>
+<td><div class='left'><ul class='normal'><li><span>user&nbsp:</span><input type='text' style='width:100px;' id='login_user' value='' spellcheck='false' autocomplete='off'></li><li><span>password&nbsp:</span><input type='password' style='width:70px;' id='login_password' value=''></ul></div><div class='left'><button class='enable' onclick='objUpdateFlow.updateUserPassword();'>一括変更</button></div></td>
+</tr>
+<tr>
+<td><span>enable&nbsp;password&nbsp:</span><input type='password' style='width:70px;' id='enable_password' value=''><button class='enable' onclick='objUpdateFlow.updateEnablePassword();'>一括変更</button></td>
 </tr>
 </table>
 </div>

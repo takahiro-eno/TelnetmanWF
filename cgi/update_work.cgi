@@ -4,6 +4,9 @@
 # 作成日 : 2015/05/14
 # 更新   : 2015/12/24 syslog 確認のJSON を取り込めるように。
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
+# 更新   : 2018/06/27 user, password を追加。
+# 更新   : 2018/06/29 iExecOnlyOne, vcAutoExecBoxId を追加。
+# 更新   : 2018/08/15 個別パラメーターシートを廃止。
 
 use strict;
 use warnings;
@@ -47,7 +50,6 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
 
 
 
@@ -83,7 +85,8 @@ my $json_start_link_vertices = &JSON::to_json($start_link_vertices);
 my $work_id                       = $cgi -> param('work_id');
 my $work_title                    = $cgi -> param('work_title');
 my $work_description              = $cgi -> param('work_description');
-my $use_parameter_sheet           = $cgi -> param('use_parameter_sheet');
+my $exec_only_one                 = $cgi -> param('exec_only_one');
+my $auto_exec_box_id              = $cgi -> param('auto_exec_box_id');
 my $bond_parameter_sheet          = $cgi -> param('bond_parameter_sheet');
 my $flowchart_before_file_name    = $cgi -> param('flowchart_before_file_name');
 my $flowchart_middle_file_name    = $cgi -> param('flowchart_middle_file_name');
@@ -99,6 +102,8 @@ my $diff_values_file_name         = $cgi -> param('diff_values_file_name');
 my $diff_values_data              = $cgi -> param('diff_values_data');
 my $optional_log_values_file_name = $cgi -> param('optional_log_values_file_name');
 my $optional_log_values_data      = $cgi -> param('optional_log_values_data');
+my $user                          = $cgi -> param('user');
+my $password                      = $cgi -> param('password');
 my $enable_password               = $cgi -> param('enable_password');
 
 unless(defined($work_title)){
@@ -109,9 +114,25 @@ unless(defined($work_description)){
  $work_description = '';
 }
 
+unless(defined($user)){
+ $user = '';
+}
+
+unless(defined($password)){
+ $password = '';
+}
+
 unless(defined($enable_password)){
  $enable_password = '';
 }
+
+unless(defined($auto_exec_box_id)){
+ $auto_exec_box_id = '';
+}
+
+my $encoded_password        = &TelnetmanWF_common::encode_password($password);
+my $encoded_enable_password = &TelnetmanWF_common::encode_password($enable_password);
+
 
 
 #
@@ -167,10 +188,13 @@ while(my ($_work_id, $ref_work_data) = each(%$work_list)){
  if($_work_id eq $work_id){
   push(@set, "vcWorkTitle = '" . &Common_sub::escape_sql($work_title) . "'");
   push(@set, "vcWorkDescription = '" . &Common_sub::escape_sql($work_description) . "'");
-  push(@set, 'iUseParameterSheet = ' . $use_parameter_sheet);
+  push(@set, 'iExecOnlyOne = ' . $exec_only_one);
+  push(@set, "vcAutoExecBoxId = '" . $auto_exec_box_id . "'");
   push(@set, 'iBondParameterSheet = ' . $bond_parameter_sheet);
   push(@set, 'iUpdateTime = ' . $time);
-  push(@set, "vcEnablePassword = '" . &Common_sub::escape_sql($enable_password) . "'");
+  push(@set, "vcUser = '" . &Common_sub::escape_sql($user) . "'");
+  push(@set, "vcPassword = '" . &Common_sub::escape_sql($encoded_password) . "'");
+  push(@set, "vcEnablePassword = '" . &Common_sub::escape_sql($encoded_enable_password) . "'");
  }
  
  my $table     = 'T_Work';

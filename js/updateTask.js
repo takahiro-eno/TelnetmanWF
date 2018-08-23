@@ -2,27 +2,27 @@
 // 作成日 : 2015/05/17
 // 作成者 : 江野高広
 // 更新 2015/12/01 : リハーサルモードを使えるように。
+// 更新 2018/08/09 : 自動実行に対応。
 
 var objUpdateTask = new updateTask();
 
 function updateTask (){
- // start, work. case を実行できる状態かどうか。
+ // start, work, case を実行できる状態かどうか。
  this.exec = true;
  
  // ノードリスト
  // key : ノード
- // value : 1 : exec 対象
- //         0 : through 対象
+ // value : exec : 1 exec 対象
+ //              : 0 through 対象
  this.nodeList = new Object();
  
  // checkStatus() をsetInterval に入れた時のID
- this.intervalId = "";
+ this.intervalId = null;
  
- // 選択中のbox id
+ // 選択中のbox id とパラメーターシート、流れ図データがあるかどうか。
  this.selectedBoxId = "";
- 
- // パラメーターシートを取り込む必要があるかどうか。
- this.useParameterSheet = false;
+ this.existsParameterSheet = 0;
+ this.existsFlowchartData  = 0;
  
  this.idBoxDataArea = "box_data_area";
  
@@ -115,19 +115,24 @@ function updateTask (){
   return("log_list_" + workId);
  };
  
+ // 実行履歴の表示エリア
+ this.idHistoryArea = "history_area";
+ this.pos = 0;
+ 
  // ドロップされたパラメーターシートのファイル名と内容。
  this.parameterSheetFileName = "";
  this.parameterSheetData = "";
  
- // loading message のid
- this.idLockScreenMessage = 'loading_message';
- 
+ // 画面locl 時の message のid やclass
+ this.idLockScreenBoard   = 'lockscreen_board';
+ this.classLockScreenHeader  = 'lockscreen_header';
+ this.idLockScreenMessage = 'lockscreen_message';
  
  //
  // loading message を変更する。
  //
  this.changeLoadingMessage = function (html){
-  document.getElementById(this.idLockScreenMessage).innerHTML = html;
+  document.getElementById(this.idLockScreenBoard).innerHTML = html;
  };
  
  
@@ -184,52 +189,37 @@ function updateTask (){
  
  
  
- 
  //
  // box data を取得、表示する。
  //
  this.getBoxData = function (boxId){
-  if(this.exec){
-   if(boxId !== this.selectedBoxId){
-    
-    if(this.selectedBoxId.length > 0){
-     var elTable = document.getElementById(this.idTable(this.selectedBoxId));
-     document.getElementById(this.idBoxDataArea).removeChild(elTable);
-     
-     objTelnetmanWorkFlow.returnStroke(this.selectedBoxId);
-     
-     this.parameterSheetFileName = "";
-     this.parameterSheetData = "";
-    }
-    
-    if(boxId.match(/^work_/)){
-     this.getWorkData(boxId);
-    }
-    else if(boxId.match(/^case_/)){
-     this.getCaseData(boxId);
-    }
-    else if(boxId.match(/^start_/)){
-     this.getTaskData(boxId);
-    }
-    else if(boxId.match(/^goal_/)){
-     this.getGoalData(boxId);
-    }
-    else if(boxId.match(/^terminal_/)){
-     this.getTerminalData(boxId);
-    }
-   }
+  if(this.selectedBoxId.length > 0){
+   this.lock(this.selectedBoxId);
+   
+   var elTable = document.getElementById(this.idTable(this.selectedBoxId));
+   document.getElementById(this.idBoxDataArea).removeChild(elTable);
+   
+   objTelnetmanWorkFlow.returnStroke(this.selectedBoxId);
+   
+   this.parameterSheetFileName = "";
+   this.parameterSheetData = "";
   }
- };
- 
- 
- 
- //
- // box data table のbottom 座標を取得する。
- //
- this.getBoxDataTableBottom = function (boxId){
-  var rect = document.getElementById(this.idTable(boxId)).getBoundingClientRect();
-  var boxDataTableBottom = window.pageYOffset + rect.top + rect.height;
-  return(boxDataTableBottom);
+  
+  if(boxId.match(/^work_/)){
+   this.getWorkData(boxId);
+  }
+  else if(boxId.match(/^case_/)){
+   this.getCaseData(boxId);
+  }
+  else if(boxId.match(/^start_/)){
+   this.getTaskData(boxId);
+  }
+  else if(boxId.match(/^goal_/)){
+   this.getGoalData(boxId);
+  }
+  else if(boxId.match(/^terminal_/)){
+   this.getTerminalData(boxId);
+  }
  };
  
  
@@ -240,13 +230,15 @@ function updateTask (){
  this.changeStartButtonStatus = function (boxId){
   var elButton = document.getElementById(this.idButtonExec(boxId));
   
-  if(this.exec && (this.parameterSheetFileName.length > 0)){
-   elButton.className = "enable";
-   elButton.onclick = new Function("objUpdateTask.startTask('" + boxId + "')");
-  }
-  else{
-   elButton.className = "disable";
-   elButton.onclick = null;
+  if(elButton !== null){
+   if(this.exec && (this.parameterSheetFileName.length > 0)){
+    elButton.className = "enable";
+    elButton.onclick = new Function("objUpdateTask.startTask('" + boxId + "')");
+   }
+   else{
+    elButton.className = "disable";
+    elButton.onclick = null;
+   }
   }
  };
  
@@ -258,13 +250,15 @@ function updateTask (){
  this.changeCaseButtonStatus = function (caseId, existsParameterSheet){
   var elButton = document.getElementById(this.idButtonExec(caseId));
   
-  if(this.exec && (existsParameterSheet === 1)){
-   elButton.className = "enable";
-   elButton.onclick = new Function("objUpdateTask.execCase('" + caseId + "')");
-  }
-  else{
-   elButton.className = "disable";
-   elButton.onclick = null;
+  if(elButton !== null){
+   if(this.exec && (existsParameterSheet === 1)){
+    elButton.className = "enable";
+    elButton.onclick = new Function("objUpdateTask.execCase('" + caseId + "')");
+   }
+   else{
+    elButton.className = "disable";
+    elButton.onclick = null;
+   }
   }
  };
  
@@ -277,23 +271,25 @@ function updateTask (){
   var elExecButton = document.getElementById(this.idButtonExec(workId));
   var elThroughButton = document.getElementById(this.idButtonThrough(workId));
   
-  if(this.exec && (existsParameterSheet === 1)){
-   elExecButton.className = "enable";
-   elThroughButton.className = "enable";
-   elThroughButton.onclick = new Function("objUpdateTask.throughWork('" + workId + "')");
-   
-   if((existsFlowchartData !== null) && (existsFlowchartData !== undefined) && (existsFlowchartData === 1)){
-    elExecButton.onclick = new Function("objUpdateTask.execWork('" + workId + "')");
+  if((elExecButton !== null) && (elThroughButton !== null)){
+   if(this.exec && (existsParameterSheet === 1)){
+    elExecButton.className = "enable";
+    elThroughButton.className = "enable";
+    elThroughButton.onclick = new Function("objUpdateTask.throughWork('" + workId + "')");
+    
+    if((existsFlowchartData !== null) && (existsFlowchartData !== undefined) && (existsFlowchartData === 1)){
+     elExecButton.onclick = new Function("objUpdateTask.execWork('" + workId + "')");
+    }
+    else if((existsFlowchartData !== null) && (existsFlowchartData !== undefined) && (existsFlowchartData === 0)){
+     elExecButton.onclick = new Function("objUpdateTask.manualExecWork('" + workId + "')");
+    }
    }
-   else if((existsFlowchartData !== null) && (existsFlowchartData !== undefined) && (existsFlowchartData === 0)){
-    elExecButton.onclick = new Function("objUpdateTask.manualExecWork('" + workId + "')");
+   else{
+    elExecButton.className = "disable";
+    elExecButton.onclick = null;
+    elThroughButton.className = "disable";
+    elThroughButton.onclick = null;
    }
-  }
-  else{
-   elExecButton.className = "disable";
-   elExecButton.onclick = null;
-   elThroughButton.className = "disable";
-   elThroughButton.onclick = null;
   }
  };
  
@@ -307,13 +303,12 @@ function updateTask (){
   var taskId       = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.selectedBoxId = boxId;
    var header = objCommon.makeHttpHeader();
    
    $.ajax({
     headers : {"TelnetmanWF" : header},
     type : "post",
-    url  : "/cgi-bin/TelnetmanWF/get_task_data.cgi",
+    url  : "/cgi-bin/TelnetmanWF/view_start_data.cgi",
     data : {
      "flow_id" : flowId,
      "task_id" : taskId,
@@ -339,11 +334,14 @@ function updateTask (){
         var taskId      = hashResult["task_id"];
         var boxId       = hashResult["box_id"];
         var title       = hashResult["title"];
-        var description = hashResult["description"];
         var updateTime  = hashResult["update_time"];
         var status      = hashResult["status"];
         
-        description = objCommon.convertHtml(description);
+        objUpdateTask.selectedBoxId = boxId;
+        objUpdateTask.existsParameterSheet = 0;
+        objUpdateTask.existsFlowchartData  = 0;
+        
+        title = objCommon.escapeHtml(title);
         
         if("login_user" in hashResult){
          var loginUser = hashResult["login_user"];
@@ -370,7 +368,7 @@ function updateTask (){
         var elSpan11 = document.createElement("span");
         var elSpan12 = document.createElement("span");
         elSpan11.innerHTML = "最終スタート時刻";
-        if(status !== 0){
+        if(updateTime !== 0){
          elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
         }
         else{
@@ -383,43 +381,17 @@ function updateTask (){
         elTr1.appendChild(elTd12);
         
         
-        var elTr2     = document.createElement("tr");
-        var elTd21    = document.createElement("td");
-        var elTd22    = document.createElement("td");
-        var elSpan21  = document.createElement("span");
-        var elInput22 = document.createElement("input");
+        var elTr2    = document.createElement("tr");
+        var elTd21   = document.createElement("td");
+        var elTd22   = document.createElement("td");
+        var elSpan21 = document.createElement("span");
+        var elSpan22 = document.createElement("span");
         elSpan21.innerHTML = "タイトル";
-        elInput22.setAttribute("type", "text");
-        elInput22.style.width = "150px";
-        //elInput22.setAttribute("size", 26);
-        elInput22.setAttribute("id", objUpdateTask.idInputTitle(boxId));
-        elInput22.setAttribute("value", title);
-        elInput22.setAttribute("spellcheck", "false");
-        elInput22.setAttribute("autocomplete", "off");
+        elSpan22.innerHTML = title;
         elTd21.appendChild(elSpan21);
-        elTd22.appendChild(elInput22);
+        elTd22.appendChild(elSpan22);
         elTr2.appendChild(elTd21);
         elTr2.appendChild(elTd22);
-        
-        
-        var elTr3        = document.createElement("tr");
-        var elTd31       = document.createElement("td");
-        var elTd32       = document.createElement("td");
-        var elSpan31     = document.createElement("span");
-        var elTextarea32 = document.createElement("textarea");
-        elSpan31.innerHTML = "説明";
-        elTextarea32.setAttribute("id", objUpdateTask.idTextAreaDescription(boxId));
-        elTextarea32.style.width = "170px";
-        elTextarea32.style.height = "100px";
-        //elTextarea32.setAttribute("cols", 26);
-        //elTextarea32.setAttribute("rows", 6);
-        elTextarea32.value = description;
-        elTextarea32.setAttribute("spellcheck", "false");
-        elTextarea32.setAttribute("autocomplete", "off");
-        elTd31.appendChild(elSpan31);
-        elTd32.appendChild(elTextarea32);
-        elTr3.appendChild(elTd31);
-        elTr3.appendChild(elTd32);
         
         
         var elTr4    = document.createElement("tr");
@@ -442,7 +414,6 @@ function updateTask (){
         
         elTable.appendChild(elTr1);
         elTable.appendChild(elTr2);
-        elTable.appendChild(elTr3);
         elTable.appendChild(elTr4);
         elTable.appendChild(elTr0);
         
@@ -451,21 +422,23 @@ function updateTask (){
         
         objTelnetmanWorkFlow.changeStroke(boxId);
         
-        var boxDataTableBottom = objUpdateTask.getBoxDataTableBottom(boxId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
+        objUpdateTask.nextProcess(boxId, status, '', 0, 0, 0);
        }
        else{
         var reason = hashResult["reason"];
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -588,15 +561,16 @@ function updateTask (){
  // デフォルトのパラメーターシートを指定する。
  //
  this.startTask = function (boxId){
-  this.exec = false;
-  this.changeStartButtonStatus(boxId);
-  
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.selectedBoxId = boxId;
+   this.lock(boxId);
+   
    var header = objCommon.makeHttpHeader();
+   
+   var telnetmanLoginUser     = objControleStorageL.getTelnetmanLoginUser();
+   var telnetmanLoginPassword = objControleStorageL.getTelnetmanLoginPassword();
    
    $.ajax({
     headers : {"TelnetmanWF" : header},
@@ -606,10 +580,11 @@ function updateTask (){
      "flow_id" : flowId,
      "task_id" : taskId,
      "box_id"  : boxId,
-     "json_parameter_sheet" : this.parameterSheetData
+     "json_parameter_sheet" : this.parameterSheetData,
+     "telnetman_user"     : telnetmanLoginUser,
+     "telnetman_password" : telnetmanLoginPassword
     },
     success : function (jsonResult) {
-     objUpdateTask.exec = true;
      
      if((jsonResult !== null) && (jsonResult !== undefined)){
       var hashResult = null;
@@ -625,36 +600,32 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status     = hashResult["status"];
-        var flowId     = hashResult["flow_id"];
-        var taskId     = hashResult["task_id"];
-        var boxId      = hashResult["box_id"];
-        var updateTime = hashResult["update_time"];
-        var targetList = hashResult["target_list"];
-        
-        objUpdateTask.removeParameterSheetName(boxId);
-        document.getElementById(objUpdateTask.idUpdateTime(boxId)).innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
-        objUpdateTask.changeStartButtonStatus(objUpdateTask.selectedBoxId);
-        
-        objTelnetmanWorkFlow.highlightBox(boxId, targetList);
+        var flowId = hashResult["flow_id"];
+        var taskId = hashResult["task_id"];
+        var boxId  = hashResult["box_id"];
+        var autoExecBoxId  = hashResult["auto_exec_box_id"];
+        var status         = hashResult["status"];
+        var errorMessage   = hashResult["error_message"];
+        var emptyBoxIdList = hashResult["empty_box_id_list"];
+        var fillBoxIdList  = hashResult["fill_box_id_list"];
+
+        objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, 0, 0, 0);
        }
        else{
         var reason = hashResult["reason"];
-        objUpdateTask.changeStartButtonStatus(objUpdateTask.selectedBoxId);
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
-       objUpdateTask.exec = true;
-       objUpdateTask.changeStartButtonStatus(objUpdateTask.selectedBoxId);
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
-     objUpdateTask.exec = true;
-     objUpdateTask.changeStartButtonStatus(objUpdateTask.selectedBoxId);
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -666,12 +637,10 @@ function updateTask (){
  // work data を取得、表示する。
  //
  this.getWorkData = function (workId){
-  this.useParameterSheet = false;
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.selectedBoxId = workId;
    var header = objCommon.makeHttpHeader();
    
    $.ajax({
@@ -703,13 +672,21 @@ function updateTask (){
         var task_id              = hashResult["task_id"];
         var workId               = hashResult["work_id"];
         var status               = hashResult["status"];
+        var errorMessage         = hashResult["error_message"];
         var updateTime           = hashResult["update_time"];      
         var title                = hashResult["title"];
+        var execOnlyOne          = hashResult["exec_only_one"];
         var description          = hashResult["description"];
         var existsParameterSheet = hashResult["exists_parameter_sheet"];
         var existsFlowchartData  = hashResult["exists_flowchart_data"];
+        var nodeList             = hashResult["node_list"];
         var isManualSplit = false;
         
+        objUpdateTask.selectedBoxId = workId;
+        objUpdateTask.existsParameterSheet = existsParameterSheet;
+        objUpdateTask.existsFlowchartData  = existsFlowchartData;
+        
+        title       = objCommon.escapeHtml(title);
         description = objCommon.convertHtml(description);
         
         var elTable = document.createElement("table");
@@ -735,8 +712,8 @@ function updateTask (){
         var elTd12   = document.createElement("td");
         var elSpan11 = document.createElement("span");
         var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "更新時刻";
-        if(status !== 0){
+        elSpan11.innerHTML = "最終実行時刻";
+        if(updateTime !== 0){
          elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
         }
         else{
@@ -811,7 +788,7 @@ function updateTask (){
          var elSpan91 = document.createElement("span");
          var elUl92 = document.createElement("ul");
          elUl92.setAttribute("class", "node_list");
-         elSpan91.innerHTML = "exec 対象";
+         elSpan91.innerHTML = "exec&nbsp;対象";
          elUl92.setAttribute("id", objUpdateTask.idNodeList(workId));
          elTd91.appendChild(elSpan91);
          elTd92.appendChild(elUl92);
@@ -824,25 +801,29 @@ function updateTask (){
         
         
         if(existsFlowchartData === 1){
-         var useParameterSheet = hashResult["use_parameter_sheet"];
-         var logTimeList       = hashResult["log_time_list"];
-         var logTypeList       = hashResult["log_type_list"];
+         var logTimeList = hashResult["log_time_list"];
+         var logTypeList = hashResult["log_type_list"];
          
          var loginUser = "";
-         if("login_user" in hashResult){
-          loginUser = hashResult["login_user"];
+         var loginPassword = "";
+         if(hashResult["login_user"].length > 0){
+          loginUser     = hashResult["login_user"];
+          loginPassword = hashResult["login_password"];
+          objControleStorageS.setLoginPassword(loginUser, loginPassword);
          }
-         var loginPassWord = objControleStorageS.getLoginPassword(loginUser);
+         else if("login_info_login_user" in hashResult){
+          loginUser     = hashResult["login_info_login_user"];
+          loginPassword = objControleStorageS.getLoginPassword(loginUser);
+         }
          
          var elTr5     = document.createElement("tr");
          var elTd51    = document.createElement("td");
          var elTd52    = document.createElement("td");
          var elSpan51  = document.createElement("span");
          var elInput52 = document.createElement("input");
-         elSpan51.innerHTML = "ログインID";
+         elSpan51.innerHTML = "user";
          elInput52.setAttribute("type", "text");
          elInput52.style.width = "130px";
-         //elInput52.setAttribute("size", 20);
          elInput52.setAttribute("id", objUpdateTask.idInputLoginUser(workId));
          elInput52.setAttribute("value", loginUser);
          elInput52.setAttribute("list", objUpdateTask.idDatalistLoginUser(workId));
@@ -869,62 +850,39 @@ function updateTask (){
          var elTd62    = document.createElement("td");
          var elSpan61  = document.createElement("span");
          var elInput62 = document.createElement("input");
-         elSpan61.innerHTML = "ログインPassword";
+         elSpan61.innerHTML = "password";
          elInput62.setAttribute("type", "password");
          elInput62.style.width = "130px";
-         //elInput62.setAttribute("size", 20);
          elInput62.setAttribute("id", objUpdateTask.idInputLoginPassword(workId));
-         elInput62.setAttribute("value", loginPassWord);
+         elInput62.setAttribute("value", loginPassword);
          elTd61.appendChild(elSpan61);
          elTd62.appendChild(elInput62);
          elTr6.appendChild(elTd61);
          elTr6.appendChild(elTd62);
          
-         
-         var elTr7     = document.createElement("tr");
-         var elTd71    = document.createElement("td");
-         elTd71.setAttribute("colspan", 2);
-         elTd71.setAttribute("id", objUpdateTask.idLogList(workId));
-         for(var i = 0, j = logTimeList.length; i < j; i ++){
-          var time = logTimeList[i];
-          var timeString = time.toString();
-          var elementList = objUpdateTask.makeLogList(flowId, taskId, workId, time, logTypeList[timeString]["ok"], logTypeList[timeString]["ng"], logTypeList[timeString]["error"], logTypeList[timeString]["diff"], logTypeList[timeString]["optional"], logTypeList[timeString]["individual_parameter_sheet"]);
-          var elP  = elementList[0];
-          var elUl = elementList[1];
-          
-          elTd71.appendChild(elP);
-          elTd71.appendChild(elUl);
-         }
-         elTr7.appendChild(elTd71);
-         
-         
-         if(useParameterSheet === 1){
-          objUpdateTask.useParameterSheet = true;
-          
-          var elTr4    = document.createElement("tr");
-          var elTd41   = document.createElement("td");
-          var elTd42   = document.createElement("td");
-          var elSpan41 = document.createElement("span");
-          var elDiv42  = document.createElement("div");
-          elSpan41.innerHTML = "個別パラメーターシート";
-          elDiv42.setAttribute("class", "drop_area parameter_sheet_data_div");
-          elDiv42.ondragover = new Function("event", "objCommon.onDragOver(event);");
-          elDiv42.ondrop     = new Function("event", "objUpdateTask.onDropParameterSheetData(event)");
-          var elPLoginInfo = document.createElement("p");
-          elPLoginInfo.setAttribute("id", objUpdateTask.idParameterSheet(workId));
-          elDiv42.appendChild(elPLoginInfo);
-          elTd41.appendChild(elSpan41);
-          elTd42.appendChild(elDiv42);
-          elTr4.appendChild(elTd41);
-          elTr4.appendChild(elTd42);
-          
-          elTable.appendChild(elTr4);
-         }
-         
          elTable.appendChild(elTr5);
          elTable.appendChild(elTr6);
          elTable.appendChild(elTr0);
-         elTable.appendChild(elTr7);
+         
+         if(logTimeList.length > 0){
+          var elTr7     = document.createElement("tr");
+          var elTd71    = document.createElement("td");
+          elTd71.setAttribute("colspan", 2);
+          elTd71.setAttribute("id", objUpdateTask.idLogList(workId));
+          for(var i = 0, j = logTimeList.length; i < j; i ++){
+           var time = logTimeList[i];
+           var timeString = time.toString();
+           var elementList = objUpdateTask.makeLogList(flowId, taskId, workId, time, logTypeList[timeString]["ok"], logTypeList[timeString]["ng"], logTypeList[timeString]["error"], logTypeList[timeString]["diff"], logTypeList[timeString]["optional"]);
+           var elP  = elementList[0];
+           var elUl = elementList[1];
+           
+           elTd71.appendChild(elP);
+           elTd71.appendChild(elUl);
+          }
+          elTr7.appendChild(elTd71);
+                   
+          elTable.appendChild(elTr7);
+         }
         }
         else if(existsFlowchartData === 0){
          isManualSplit = true;
@@ -932,34 +890,39 @@ function updateTask (){
         }
          
         document.getElementById(objUpdateTask.idBoxDataArea).appendChild(elTable);
+        
+        // ノードリストを作り直す。
+        objUpdateTask.makeNodeList(workId, nodeList, true, isManualSplit, execOnlyOne);
+        
+        //
+        // [objUpdateTask.exec = false の前提でボタンの状態設定]
+        //  - exec, through を押せなくする。
+        //  - 各ノードのexec 対象の変更をできないようにする。
+        //
         objUpdateTask.changeWorkButtonStatus(workId, existsParameterSheet, existsFlowchartData);
-         
-        if(existsParameterSheet === 1){
-         var nodeList = hashResult["node_list"];
-         objUpdateTask.makeNodeList(workId, nodeList, true, isManualSplit);
-        }
+        objUpdateTask.disableCheckBox(true);
         
-        if(!objUpdateTask.exec){
-         objUpdateTask.disableCheckBox(true);
-        }
-        
+        // 太枠にする。
         objTelnetmanWorkFlow.changeStroke(workId);
         
-        var boxDataTableBottom = objUpdateTask.getBoxDataTableBottom(workId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
+        // status により画面を変更する。
+        objUpdateTask.nextProcess(workId, status, errorMessage, existsParameterSheet, existsFlowchartData, 0);
        }
        else{
         var reason = hashResult["reason"];
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -1013,94 +976,111 @@ function updateTask (){
  //
  // ノードリストの表示内容を最新のものに差し替える。
  //
- this.makeNodeList = function (workId, nodeList, defaultChecked, isManualSplit){
-  var elUlNodeList = document.getElementById(this.idNodeList(workId));
-  var nodeLiList = elUlNodeList.childNodes;
-  
+ this.makeNodeList = function (workId, nodeList, defaultChecked, isManualSplit, execOnlyOne){
   for(var node in this.nodeList){
    delete(this.nodeList[node]);
   }
   
-  for(var i = nodeLiList.length - 1; i >= 0; i --){
-   elUlNodeList.removeChild(nodeLiList[i]);
-  }
-  
-  for(var k = 0, l = nodeList.length; k < l; k ++){
-   node = nodeList[k];
-   this.nodeList[node] = new Object();
+  var elUlNodeList = document.getElementById(this.idNodeList(workId));
+  if(elUlNodeList !== null){
+   var nodeLiList = elUlNodeList.childNodes;
    
-   if(defaultChecked){
-    this.nodeList[node]["exec"] = 1;
-   }
-   else{
-    this.nodeList[node]["exec"] = 0;
+   for(var i = nodeLiList.length - 1; i >= 0; i --){
+    elUlNodeList.removeChild(nodeLiList[i]);
    }
    
-   var elLi = document.createElement("li");
-   var idNode = this.idNodeCheckBox(node);
-   var elCheckBox = document.createElement("input");
-   elCheckBox.setAttribute("type", "checkbox");
-   elCheckBox.setAttribute("id", idNode);
-   elCheckBox.setAttribute("value", node);
-   elCheckBox.checked = defaultChecked;
-   elCheckBox.disabled = false;
-   elCheckBox.onchange = new Function("objUpdateTask.changeNodeListStatus('" + node + "');");
-   var elLabelNode = document.createElement("label");
-   elLabelNode.setAttribute("for", idNode);
-   elLabelNode.setAttribute("class", "checkbox1");
-   elLabelNode.innerHTML = node;
-   
-   elLi.appendChild(elCheckBox);
-   elLi.appendChild(elLabelNode);
-   
-   if(isManualSplit){
-    var defaultDisabled = true;
-    if(defaultChecked){
-     defaultDisabled = false;
+   for(var k = 0, l = nodeList.length; k < l; k ++){
+    node = nodeList[k];
+    this.nodeList[node] = new Object();
+    
+    var nodeChecked = false;
+    
+    if(execOnlyOne === 1){
+     if(k === 0){
+      this.nodeList[node]["exec"] = 1;
+      nodeChecked = true;
+     }
+     else{
+      this.nodeList[node]["exec"] = 0;
+     }
+    }
+    else{
+     if(defaultChecked){
+      this.nodeList[node]["exec"] = 1;
+     }
+     else{
+      this.nodeList[node]["exec"] = 0;
+     }
+     
+     nodeChecked = defaultChecked;
     }
     
-    var elSpan = document.createElement("span");
-    elSpan.setAttribute("class", "ok_ng_radio_button");
+    var elLi = document.createElement("li");
+    var idNode = this.idNodeCheckBox(node);
+    var elCheckBox = document.createElement("input");
+    elCheckBox.setAttribute("type", "checkbox");
+    elCheckBox.setAttribute("id", idNode);
+    elCheckBox.setAttribute("value", node);
+    elCheckBox.checked = nodeChecked;
+    elCheckBox.disabled = false;
+    elCheckBox.onchange = new Function("objUpdateTask.changeNodeListStatus('" + node + "');");
+    var elLabelNode = document.createElement("label");
+    elLabelNode.setAttribute("for", idNode);
+    elLabelNode.setAttribute("class", "checkbox1");
+    elLabelNode.innerHTML = node;
     
-    var nameRadio = this.idRadioOkNg(node);
+    elLi.appendChild(elCheckBox);
+    elLi.appendChild(elLabelNode);
     
-    this.nodeList[node]["ok"] = 0;
-    var idRadioOk = this.idRadioOkNg(node, "ok");
-    var elRadioButtonOk = document.createElement("input");
-    elRadioButtonOk.setAttribute("type", "radio");
-    elRadioButtonOk.setAttribute("name", nameRadio);
-    elRadioButtonOk.setAttribute("id", idRadioOk);
-    elRadioButtonOk.setAttribute("value", "1");
-    elRadioButtonOk.checked = false;
-    elRadioButtonOk.disabled = defaultDisabled;
-    elRadioButtonOk.onchange = new Function("objUpdateTask.changeNodeListOkNg('" + node + "')");
-    var elLabelOk = document.createElement("label");
-    elLabelOk.setAttribute("for", idRadioOk);
-    elLabelOk.innerHTML = "OK";
+    if(isManualSplit){
+     var defaultDisabled = true;
+     if(defaultChecked){
+      defaultDisabled = false;
+     }
+     
+     var elSpan = document.createElement("span");
+     elSpan.setAttribute("class", "ok_ng_radio_button");
+     
+     var nameRadio = this.idRadioOkNg(node);
+     
+     this.nodeList[node]["ok"] = 0;
+     var idRadioOk = this.idRadioOkNg(node, "ok");
+     var elRadioButtonOk = document.createElement("input");
+     elRadioButtonOk.setAttribute("type", "radio");
+     elRadioButtonOk.setAttribute("name", nameRadio);
+     elRadioButtonOk.setAttribute("id", idRadioOk);
+     elRadioButtonOk.setAttribute("value", "1");
+     elRadioButtonOk.checked = false;
+     elRadioButtonOk.disabled = defaultDisabled;
+     elRadioButtonOk.onchange = new Function("objUpdateTask.changeNodeListOkNg('" + node + "')");
+     var elLabelOk = document.createElement("label");
+     elLabelOk.setAttribute("for", idRadioOk);
+     elLabelOk.innerHTML = "OK";
+     
+     this.nodeList[node]["ng"] = 0;
+     var idRadioNg = this.idRadioOkNg(node, "ng");
+     var elRadioButtonNg = document.createElement("input");
+     elRadioButtonNg.setAttribute("type", "radio");
+     elRadioButtonNg.setAttribute("name", nameRadio);
+     elRadioButtonNg.setAttribute("id", idRadioNg);
+     elRadioButtonNg.setAttribute("value", "0");
+     elRadioButtonNg.checked = false;
+     elRadioButtonNg.disabled = defaultDisabled;
+     elRadioButtonNg.onchange = new Function("objUpdateTask.changeNodeListOkNg('" + node + "')");
+     var elLabelNg = document.createElement("label");
+     elLabelNg.setAttribute("for", idRadioNg);
+     elLabelNg.innerHTML = "NG";
+     
+     elSpan.appendChild(elRadioButtonOk);
+     elSpan.appendChild(elLabelOk);
+     elSpan.appendChild(elRadioButtonNg);
+     elSpan.appendChild(elLabelNg);
+     
+     elLi.appendChild(elSpan);
+    }                              
     
-    this.nodeList[node]["ng"] = 0;
-    var idRadioNg = this.idRadioOkNg(node, "ng");
-    var elRadioButtonNg = document.createElement("input");
-    elRadioButtonNg.setAttribute("type", "radio");
-    elRadioButtonNg.setAttribute("name", nameRadio);
-    elRadioButtonNg.setAttribute("id", idRadioNg);
-    elRadioButtonNg.setAttribute("value", "0");
-    elRadioButtonNg.checked = false;
-    elRadioButtonNg.disabled = defaultDisabled;
-    elRadioButtonNg.onchange = new Function("objUpdateTask.changeNodeListOkNg('" + node + "')");
-    var elLabelNg = document.createElement("label");
-    elLabelNg.setAttribute("for", idRadioNg);
-    elLabelNg.innerHTML = "NG";
-    
-    elSpan.appendChild(elRadioButtonOk);
-    elSpan.appendChild(elLabelOk);
-    elSpan.appendChild(elRadioButtonNg);
-    elSpan.appendChild(elLabelNg);
-    
-    elLi.appendChild(elSpan);
-   }                              
-   
-   elUlNodeList.appendChild(elLi);
+    elUlNodeList.appendChild(elLi);
+   }
   }
  };
  
@@ -1219,11 +1199,10 @@ function updateTask (){
  // case data を取得、表示する。
  //
  this.getCaseData = function (caseId){
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.selectedBoxId = caseId;
    var header = objCommon.makeHttpHeader();
    
    $.ajax({
@@ -1258,8 +1237,14 @@ function updateTask (){
         var description          = hashResult["description"];
         var existsParameterSheet = hashResult["exists_parameter_sheet"];
         var status               = hashResult["status"];
+        var errorMessage         = hashResult["erroe_message"];
         var updateTime           = hashResult["update_time"];
         
+        objUpdateTask.selectedBoxId = caseId;
+        objUpdateTask.existsParameterSheet = existsParameterSheet;
+        objUpdateTask.existsFlowchartData  = 0;
+        
+        title       = objCommon.escapeHtml(title);
         description = objCommon.convertHtml(description);
         
         var elTable = document.createElement("table");
@@ -1281,8 +1266,8 @@ function updateTask (){
         var elTd12   = document.createElement("td");
         var elSpan11 = document.createElement("span");
         var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "更新時刻";
-        if(status !== 0){
+        elSpan11.innerHTML = "最終実行時刻";
+        if(updateTime !== 0){
          elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
         }
         else{
@@ -1359,27 +1344,112 @@ function updateTask (){
         
         objTelnetmanWorkFlow.changeStroke(caseId);
         
-        var boxDataTableBottom = objUpdateTask.getBoxDataTableBottom(caseId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
+        // status により画面を変更する。
+        objUpdateTask.nextProcess(caseId, status, errorMessage, existsParameterSheet, 0, 0);
        }
        else{
         var reason = hashResult["reason"];
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
-  
  };
  
+ 
+ 
+ //
+ // work, case のstatus を確認して次の動きを決定する。
+ //
+ this.nextProcess = function(boxId, status, errorMessage, existsParameterSheet, existsFlowchartData, forceStop){
+  if(status === 2){
+   this.unlock(boxId, existsParameterSheet, existsFlowchartData);
+  }
+  else if(status === -1){
+   alert(errorMessage);
+   this.unlock(boxId, existsParameterSheet, existsFlowchartData);
+  }
+  else{
+   if(this.intervalId === null){
+    this.intervalId = setInterval("objUpdateTask.checkLastStatus('" + boxId + "')", 5000);
+    
+    if(forceStop === 1){
+     this.changeLoadingMessage("<div class='" + this.classLockScreenHeader + "'><span>実行履歴</span><button class='disable'>強制終了</button></div><div id='" + this.idLockScreenMessage + "' class='" + this.idLockScreenMessage + "'><span>強制終了します。</span><br><span>しばらくお待ち下さい。</span></div><div id='" + this.idHistoryArea + "' class='" + this.idHistoryArea + "' contenteditable='true'></div>");
+    }
+    else{
+     this.changeLoadingMessage("<div class='" + this.classLockScreenHeader + "'><span>実行履歴</span><button class='enable' id='" + this.idForceStopButton + "' onclick='objUpdateTask.forceStop();'>強制終了</button></div><div id='" + this.idLockScreenMessage + "' class='" + this.idLockScreenMessage + "'><span>しばらくお待ち下さい。</sapn><img src='img/loading_2.gif' width='16' heigth='16' alt='loading'><br><span>ブラウザを閉じてしまってもオペレーションは継続します。</span></div><div id='" + this.idHistoryArea + "' class='" + this.idHistoryArea + "' contenteditable='true'></div>");
+    }
+   }
+  }
+ };
+ 
+ 
+ 
+ //
+ // 画面のlock, unlock
+ //
+ this.lock = function (boxId){
+  this.exec = false;
+  
+  if((boxId === null) || (boxId === undefined)){
+   boxId = "";
+  }
+  
+  var html = "<div class='" + this.idLockScreenBoard + "' id='" + this.idLockScreenBoard + "'><div class='" + this.idLockScreenMessage + "'><img src='img/loading_1.gif' width='54' height='55' alt='loading'></div></div>";
+  
+  objCommon.lockScreen(html);
+  
+  if(boxId.match(/^work_/)){
+   this.changeWorkButtonStatus(boxId, 1, 1);
+   this.disableCheckBox(true);
+  }
+  else if(boxId.match(/^case_/)){
+   this.changeCaseButtonStatus(boxId, 1);
+  }
+  else if(boxId.match(/^start_/)){
+   this.changeStartButtonStatus(boxId);
+  }
+ };
+ 
+ this.unlock = function (boxId, existsParameterSheet, existsFlowchartData){
+  this.exec = true;
+  
+  if((boxId === null) || (boxId === undefined)){
+   boxId = this.selectedBoxId;
+  }
+  
+  if((existsParameterSheet === null) || (existsParameterSheet === undefined)){
+   existsParameterSheet = this.existsParameterSheet;
+  }
+  
+  if((existsFlowchartData === null) || (existsFlowchartData === undefined)){
+   existsFlowchartData = this.existsFlowchartData;
+  }
+  
+  if(boxId.match(/^work_/)){
+   this.changeWorkButtonStatus(boxId, existsParameterSheet, existsFlowchartData);
+   this.disableCheckBox(false);
+  }
+  else if(boxId.match(/^case_/)){
+   this.changeCaseButtonStatus(boxId, existsParameterSheet);
+  }
+  else if(boxId.match(/^start_/)){
+   this.changeStartButtonStatus(boxId);
+  }
+  
+  objCommon.unlockScreen();
+ };
  
  
  //
@@ -1390,7 +1460,6 @@ function updateTask (){
   var taskId       = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.selectedBoxId = terminalId;
    var header = objCommon.makeHttpHeader();
    
    $.ajax({
@@ -1426,6 +1495,11 @@ function updateTask (){
         var existsParameterSheet = hashResult["exists_parameter_sheet"];
         var updateTime           = hashResult["update_time"];
         
+        objUpdateTask.selectedBoxId = terminalId;
+        objUpdateTask.existsParameterSheet = existsParameterSheet;
+        objUpdateTask.existsFlowchartData  = 0;
+        
+        title       = objCommon.escapeHtml(title);
         description = objCommon.convertHtml(description);
         
         var elTable = document.createElement("table");
@@ -1517,26 +1591,27 @@ function updateTask (){
          elTable.appendChild(elTr9);
         }
     
-        
         document.getElementById(objUpdateTask.idBoxDataArea).appendChild(elTable);
         
         objTelnetmanWorkFlow.changeStroke(terminalId);
         
-        var boxDataTableBottom = objUpdateTask.getBoxDataTableBottom(terminalId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
+        objUpdateTask.nextProcess(terminalId, 2, '', existsParameterSheet, 0, 0);
        }
        else{
         var reason = hashResult["reason"];
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -1548,7 +1623,7 @@ function updateTask (){
  //
  // 1回分の過去ログ一覧を作る。
  //
- this.makeLogList = function (flowId, taskId, workId, time, ok, ng, error, diff, optional, individualParameterSheet){
+ this.makeLogList = function (flowId, taskId, workId, time, ok, ng, error, diff, optional){
   var date = objCommon.unixtimeToDate(time, "YYYY/MM/DD hh:mm:ss");
   var timeString = time.toString();
   
@@ -1564,16 +1639,6 @@ function updateTask (){
   elSpanParameterSheet.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + workId + "', " + timeString + ")");
   elLiParameterSheet.appendChild(elSpanParameterSheet);
   elUl.appendChild(elLiParameterSheet);
-  
-  if(individualParameterSheet === 1){
-   var elLiIndividualParameterSheet = document.createElement("li");
-   var elSpanIndividualParameterSheet = document.createElement("span");
-   elSpanIndividualParameterSheet.innerHTML = "個別パラメーターシート";
-   elSpanIndividualParameterSheet.setAttribute("class", "onclick_node parameter_sheet");
-   elSpanIndividualParameterSheet.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + workId + "', " + timeString + ",'',1)");
-   elLiIndividualParameterSheet.appendChild(elSpanIndividualParameterSheet);
-   elUl.appendChild(elLiIndividualParameterSheet);
-  }
   
   if(ok === 1){
    var elLiOk = document.createElement("li");
@@ -1640,16 +1705,12 @@ function updateTask (){
  //
  // パラメーターシートをダウンロードする。
  //
- this.getParameterSheet = function (flowId, taskId, boxId, timeString, node, individual){
+ this.getParameterSheet = function (flowId, taskId, boxId, timeString, node){
   if((node === null) || (node === undefined)){
    node = "";
   }
   
-  if((individual === null) || (individual === undefined)){
-   individual = "";
-  }
-  
-  window.location = "/cgi-bin/TelnetmanWF/get_parameter_sheet.cgi?flow_id=" + flowId + "&task_id=" + taskId + "&box_id=" + boxId + "&time=" + timeString + "&node=" + node + "&individual=" + individual;
+  window.location = "/cgi-bin/TelnetmanWF/get_parameter_sheet.cgi?flow_id=" + flowId + "&task_id=" + taskId + "&box_id=" + boxId + "&time=" + timeString + "&node=" + node;
  };
  
  
@@ -1658,194 +1719,43 @@ function updateTask (){
  // work を実行する。
  //
  this.execWork = function (workId){
-  if(this.useParameterSheet && (this.parameterSheetData.length === 0)){
-   alert("個別パラメーターシートを取り込んで下さい。");
-  }
-  else{
-   var flowId       = objControleStorageS.getFlowId();
-   var taskId       = objControleStorageS.getTaskId();
-   
-   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-    objCommon.lockScreen("<div id='" + this.idLockScreenMessage + "'><img src='img/loading_1.gif' width='54' height='55' alt='loading'></div>");
-    
-    this.exec = false;
-    this.changeWorkButtonStatus(workId, 1, 1);
-    
-    this.disableCheckBox(true);
-    
-    var checkedNodeList = this.checkNodeList();
-    var execNodeList    = checkedNodeList[0];
-    var throughNodeList = checkedNodeList[1];
-    var jsonExecNodeList    = JSON.stringify(execNodeList);
-    var jsonThroughNodeList = JSON.stringify(throughNodeList);
-    
-    var header = objCommon.makeHttpHeader();
-    
-    var user     = document.getElementById(this.idInputLoginUser(workId)).value;
-    var password = document.getElementById(this.idInputLoginPassword(workId)).value;
-    var telnetmanLoginUser     = objControleStorageL.getTelnetmanLoginUser();
-    var telnetmanLoginPassword = objControleStorageL.getTelnetmanLoginPassword();
-    
-    objControleStorageS.setLoginUser(user);
-    objControleStorageS.setLoginPassword(user, password);
-    
-    $.ajax({
-     headers : {"TelnetmanWF" : header},
-     type : "post",
-     url  : "/cgi-bin/TelnetmanWF/exec_work.cgi",
-     data : {
-      "flow_id" : flowId,
-      "task_id" : taskId,
-      "work_id" : workId,
-      "user" : user,
-      "password" : password,
-      "telnetman_login_user" : telnetmanLoginUser,
-      "telnetman_login_password" : telnetmanLoginPassword,
-      "json_parameter_sheet" : this.parameterSheetData,
-      "json_exec_node_list" : jsonExecNodeList,
-      "json_through_node_list" : jsonThroughNodeList
-     },
-     success : function (jsonResult) {
-      
-      if((jsonResult !== null) && (jsonResult !== undefined)){
-       var hashResult = null;
-       
-       try{
-        hashResult = JSON.parse(jsonResult);
-       }
-       catch(error){
-        
-       }
-       
-       if(hashResult !== null){
-        var result = hashResult["result"];
-        
-        if(result === 1){
-         var status = hashResult["status"];
-         var flowId = hashResult["flow_id"];
-         var taskId = hashResult["task_id"];
-         var workId = hashResult["work_id"];
-         var targetList = hashResult["target_list"];
-         var updateTime = hashResult["update_time"];
-         var useParameterSheet = hashResult["use_parameter_sheet"];
-         
-         if(status === 1){
-          objUpdateTask.intervalId = setInterval("objUpdateTask.checkStatus('" + workId + "')", 5000);
-          objUpdateTask.changeLoadingMessage("<span>しばらくお待ち下さい。</sapn><img src='img/loading_2.gif' width='16' heigth='16' alt='loading'><br><span>閉じてしまってもオペレーションは継続します。</span><br><span>開き直せばいつでも最新の状態で再開できます。</span>");
-         }
-         else if(status === 2){
-          objCommon.unlockScreen();
-          
-          objUpdateTask.exec = true;
-          
-          // 過去ログの追加
-          var lastLogTime  = hashResult["last_log_time"];
-          var lastLogOk    = hashResult["last_log_ok"];
-          var lastLogNg    = hashResult["last_log_ng"];
-          var lastLogError = hashResult["last_log_error"];
-          var lastLogDiff  = hashResult["last_log_diff"];
-          var lastLogOptional = hashResult["last_log_optional"];
-          var lastLodIndividualParameterSheet = hashResult["last_log_individual_parameter_sheet"];
-          var elementList = objUpdateTask.makeLogList(flowId, taskId, workId, lastLogTime, lastLogOk, lastLogNg, lastLogError, lastLogDiff, lastLogOptional, lastLodIndividualParameterSheet);
-          var elP  = elementList[0];
-          var elUl = elementList[1];
-          
-          var elLogArea = document.getElementById(objUpdateTask.idLogList(workId));
-          var logElementList = elLogArea.childNodes;
-          if(logElementList.length > 0){
-           var elLastLogElement = logElementList[0];
-           elLogArea.insertBefore(elP, elLastLogElement);
-           elLogArea.insertBefore(elUl, elLastLogElement);
-          }
-          else{
-           elLogArea.appendChild(elP);
-           elLogArea.appendChild(elUl);
-          }
-          
-          // パラメーターシートのクリック可能状態、exec 対象の表示を更新する。
-          var existsParameterSheet = hashResult["exists_parameter_sheet"];
-          if(existsParameterSheet === 1){
-           var nodeList = hashResult["node_list"];
-           objUpdateTask.makeNodeList(workId, nodeList, false, false);
-           targetList.push(workId);
-          }
-          else{
-           objUpdateTask.makeNodeList(workId, [], false, false);
-           objUpdateTask.disableParameterSheet(workId);
-          }
-          
-          // 個別パラメーターシートの欄を空にする。
-          if(useParameterSheet === 1){
-           objUpdateTask.removeParameterSheetName(workId);
-          }
-          
-          // exec ボタンをの状態を変更。
-          objUpdateTask.changeWorkButtonStatus(workId, existsParameterSheet, 1);
-          
-          // box の色を変える。
-          objTelnetmanWorkFlow.highlightBox(workId, targetList);
-         }
-         else if(status === 0){
-          objUpdateTask.exec = true;
-          objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-          objUpdateTask.disableCheckBox(false);
-          objCommon.unlockScreen();
-         }
-        }
-        else{
-         objUpdateTask.exec = true;
-         objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-         objUpdateTask.disableCheckBox(false);
-         
-         var reason = hashResult["reason"];
-         alert(reason);
-         
-         objCommon.unlockScreen();
-        }
-       }
-       else{
-        objUpdateTask.exec = true;
-        objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-        objUpdateTask.disableCheckBox(false);
-        
-        alert("CGI Error");
-        objCommon.unlockScreen();
-       }
-      }
-     },
-     error : function (){
-      objUpdateTask.exec = true;
-      objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-      objUpdateTask.disableCheckBox(false);
-      
-      alert("Server Error");
-      objCommon.unlockScreen();
-     }
-    });
-   }
-  }
- };
- 
- 
- 
- //
- // work の進捗を確認する。
- //
- this.checkStatus = function (workId){
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
+   this.lock(workId);
+   
+   var checkedNodeList = this.checkNodeList();
+   var execNodeList    = checkedNodeList[0];
+   var throughNodeList = checkedNodeList[1];
+   var jsonExecNodeList    = JSON.stringify(execNodeList);
+   var jsonThroughNodeList = JSON.stringify(throughNodeList);
+   
    var header = objCommon.makeHttpHeader();
+   
+   var user     = document.getElementById(this.idInputLoginUser(workId)).value;
+   var password = document.getElementById(this.idInputLoginPassword(workId)).value;
+   var telnetmanLoginUser     = objControleStorageL.getTelnetmanLoginUser();
+   var telnetmanLoginPassword = objControleStorageL.getTelnetmanLoginPassword();
+   
+   objControleStorageS.setLoginUser(user);
+   objControleStorageS.setLoginPassword(user, password);
    
    $.ajax({
     headers : {"TelnetmanWF" : header},
     type : "post",
-    url  : "/cgi-bin/TelnetmanWF/check_status.cgi",
+    url  : "/cgi-bin/TelnetmanWF/exec_work.cgi",
     data : {
      "flow_id" : flowId,
      "task_id" : taskId,
-     "work_id" : workId
+     "work_id" : workId,
+     "user" : user,
+     "password" : password,
+     "telnetman_user" : telnetmanLoginUser,
+     "telnetman_password" : telnetmanLoginPassword,
+     "json_parameter_sheet" : this.parameterSheetData,
+     "json_exec_node_list" : jsonExecNodeList,
+     "json_through_node_list" : jsonThroughNodeList
     },
     success : function (jsonResult) {
      
@@ -1863,71 +1773,33 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status = hashResult["status"];
         var flowId = hashResult["flow_id"];
         var taskId = hashResult["task_id"];
-        var workId = hashResult["work_id"];
-        var targetList = hashResult["target_list"];
-        var updateTime = hashResult["update_time"];
-        var useParameterSheet = hashResult["use_parameter_sheet"];
-        
-        if(status === 2){
-         objCommon.unlockScreen();
-         
-         clearInterval(objUpdateTask.intervalId);
-         objUpdateTask.intervalId = "";
-         
-         objUpdateTask.exec = true;
-         
-         // 過去ログの追加
-         var lastLogTime  = hashResult["last_log_time"];
-         var lastLogOk    = hashResult["last_log_ok"];
-         var lastLogNg    = hashResult["last_log_ng"];
-         var lastLogError = hashResult["last_log_error"];
-         var lastLogDiff  = hashResult["last_log_diff"];
-         var lastLogOptional = hashResult["last_log_optional"];
-         var elementList = objUpdateTask.makeLogList(flowId, taskId, workId, lastLogTime, lastLogOk, lastLogNg, lastLogError, lastLogDiff, lastLogOptional);
-         var elP  = elementList[0];
-         var elUl = elementList[1];
-         
-         var elLogArea = document.getElementById(objUpdateTask.idLogList(workId));
-         var logElementList = elLogArea.childNodes;
-         if(logElementList.length > 0){
-          var elLastLogElement = logElementList[0];
-          elLogArea.insertBefore(elP, elLastLogElement);
-          elLogArea.insertBefore(elUl, elLastLogElement);
-         }
-         else{
-          elLogArea.appendChild(elP);
-          elLogArea.appendChild(elUl);
-         }
-         
-         // パラメーターシートのクリック可能状態、exec 対象の表示を更新する。
-         var existsParameterSheet = hashResult["exists_parameter_sheet"];
-         if(existsParameterSheet === 1){
-          var nodeList = hashResult["node_list"];
-          objUpdateTask.makeNodeList(workId, nodeList, false, false);
-          targetList.push(workId);
-         }
-         else{
-          objUpdateTask.makeNodeList(workId, [], false, false);
-          objUpdateTask.disableParameterSheet(workId);
-         }
-         
-         // 個別パラメーターシートの欄を空にする。
-         if(useParameterSheet === 1){
-          objUpdateTask.removeParameterSheetName(workId);
-         }
-         
-         // exec ボタンをの状態を変更。
-         objUpdateTask.changeWorkButtonStatus(workId, existsParameterSheet, 1);
-         
-         // box の色を変える。
-         objTelnetmanWorkFlow.highlightBox(workId, targetList);
-        }
+        var boxId  = hashResult["box_id"];
+        var autoExecBoxId  = hashResult["auto_exec_box_id"];
+        var status         = hashResult["status"];
+        var errorMessage   = hashResult["error_message"];
+        var emptyBoxIdList = hashResult["empty_box_id_list"];
+        var fillBoxIdList  = hashResult["fill_box_id_list"];
+        var existsParameterSheet = hashResult["exists_parameter_sheet"];
+
+        objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, 1, 0);
+       }
+       else{
+        var reason = hashResult["reason"];
+        alert(reason);
+        objUpdateTask.unlock();
        }
       }
+      else{
+       alert("CGI Error");
+       objUpdateTask.unlock();
+      }
      }
+    },
+    error : function (){
+     alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -1939,16 +1811,11 @@ function updateTask (){
  // 手動でOK, NG 分岐を行う。
  //
  this.manualExecWork = function (workId){
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   objCommon.lockScreen("<div id='" + this.idLockScreenMessage + "'><img src='img/loading_1.gif' width='54' height='55' alt='loading'></div>");
-   
-   this.exec = false;
-   this.changeWorkButtonStatus(workId, 1, 0);
-   
-   this.disableCheckBox(true);
+   this.lock(workId);
    
    var checkedNodeList = this.checkNodeList();
    var execNodeList    = checkedNodeList[0];
@@ -2005,71 +1872,33 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status = hashResult["status"];
         var flowId = hashResult["flow_id"];
         var taskId = hashResult["task_id"];
-        var workId = hashResult["work_id"];
-        var targetList = hashResult["target_list"];
-        var updateTime = hashResult["update_time"];
-        
-        if(status === 2){
-         objCommon.unlockScreen();
-         
-         objUpdateTask.exec = true;
-         
-         // パラメーターシートのクリック可能状態、exec 対象の表示を更新する。
-         var existsParameterSheet = hashResult["exists_parameter_sheet"];
-         if(existsParameterSheet === 1){
-          var nodeList = hashResult["node_list"];
-          objUpdateTask.makeNodeList(workId, nodeList, false, true);
-          targetList.push(workId);
-         }
-         else{
-          objUpdateTask.makeNodeList(workId, [], false, true);
-          objUpdateTask.disableParameterSheet(workId);
-         }
-         
-         // exec ボタンをの状態を変更。
-         objUpdateTask.changeWorkButtonStatus(workId, existsParameterSheet, 0);
-         
-         // box の色を変える。
-         objTelnetmanWorkFlow.highlightBox(workId, targetList);
-        }
-        else if(status === 0){
-         objUpdateTask.exec = true;
-         objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 0);
-         objUpdateTask.disableCheckBox(false);
-         objCommon.unlockScreen();
-        }
+        var boxId  = hashResult["box_id"];
+        var autoExecBoxId  = hashResult["auto_exec_box_id"];
+        var status         = hashResult["status"];
+        var errorMessage   = hashResult["error_message"];
+        var emptyBoxIdList = hashResult["empty_box_id_list"];
+        var fillBoxIdList  = hashResult["fill_box_id_list"];
+        var existsParameterSheet = hashResult["exists_parameter_sheet"];
+
+        objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, 0, 0);
        }
        else{
-        objUpdateTask.exec = true;
-        objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 0);
-        objUpdateTask.disableCheckBox(false);
-        
         var reason = hashResult["reason"];
         alert(reason);
-        
-        objCommon.unlockScreen();
+        objUpdateTask.unlock();
        }
       }
       else{
-       objUpdateTask.exec = true;
-       objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 0);
-       objUpdateTask.disableCheckBox(false);
-       
        alert("CGI Error");
-       objCommon.unlockScreen();
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
-     objUpdateTask.exec = true;
-     objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 0);
-     objUpdateTask.disableCheckBox(false);
-     
      alert("Server Error");
-     objCommon.unlockScreen();
+     objUpdateTask.unlock();
     }
    });
   }
@@ -2081,14 +1910,11 @@ function updateTask (){
  // case を実行する。
  //
  this.execCase = function (caseId){
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   objCommon.lockScreen("<div id='" + this.idLockScreenMessage + "'><img src='img/loading_1.gif' width='54' height='55' alt='loading'></div>");
-   
-   this.exec = false;
-   this.changeCaseButtonStatus(caseId, 1);
+   this.lock(caseId);
    
    var header = objCommon.makeHttpHeader();
    
@@ -2117,64 +1943,33 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status = hashResult["status"];
         var flowId = hashResult["flow_id"];
         var taskId = hashResult["task_id"];
-        var caseId = hashResult["case_id"];
-        var targetList = hashResult["target_list"];
-        var updateTime = hashResult["update_time"];
-        
-        if(status === 2){
-         objCommon.unlockScreen();
-         
-         objUpdateTask.exec = true;
-         
-         // パラメーターシートをクリック可能状態に。
-         var existsParameterSheet = hashResult["exists_parameter_sheet"];
-         if(existsParameterSheet === 1){
-          targetList.push(caseId);
-         }
-         else{
-          objUpdateTask.disableParameterSheet(caseId);
-         }
-         
-         // exec ボタンをの状態を変更。
-         objUpdateTask.changeCaseButtonStatus(caseId, existsParameterSheet);
-         
-         // box の色を変える。
-         objTelnetmanWorkFlow.highlightBox(caseId, targetList);
-        }
-        else if(status === 0){
-         objUpdateTask.exec = true;
-         objUpdateTask.changeCaseButtonStatus(objUpdateTask.selectedBoxId, 1);
-         objCommon.unlockScreen();
-        }
+        var boxId  = hashResult["box_id"];
+        var autoExecBoxId  = hashResult["auto_exec_box_id"];
+        var status         = hashResult["status"];
+        var errorMessage   = hashResult["error_message"];
+        var emptyBoxIdList = hashResult["empty_box_id_list"];
+        var fillBoxIdList  = hashResult["fill_box_id_list"];
+        var existsParameterSheet = hashResult["exists_parameter_sheet"];
+
+        objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, 0, 0);
        }
        else{
-        objUpdateTask.exec = true;
-        objUpdateTask.changeCaseButtonStatus(objUpdateTask.selectedBoxId, 1);
-        
         var reason = hashResult["reason"];
         alert(reason);
-        
-        objCommon.unlockScreen();
+        objUpdateTask.unlock();
        }
       }
       else{
-       objUpdateTask.exec = true;
-       objUpdateTask.changeCaseButtonStatus(objUpdateTask.selectedBoxId, 1);
-       
        alert("CGI Error");
-       objCommon.unlockScreen();
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
-     objUpdateTask.exec = true;
-     objUpdateTask.changeCaseButtonStatus(objUpdateTask.selectedBoxId, 1);
-     
      alert("Server Error");
-     objCommon.unlockScreen();
+     objUpdateTask.unlock();
     }
    });
   }
@@ -2185,12 +1980,16 @@ function updateTask (){
  //
  // 最後の状態を確認する。
  //
- this.checkLastStatus = function (){
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+ this.checkLastStatus = function (boxId){
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
    var header = objCommon.makeHttpHeader();
+   
+   if((boxId === null) || (boxId === undefined)){
+    boxId = "";
+   }
    
    $.ajax({
     headers : {"TelnetmanWF" : header},
@@ -2198,7 +1997,9 @@ function updateTask (){
     url  : "/cgi-bin/TelnetmanWF/check_last_status.cgi",
     data : {
      "flow_id" : flowId,
-     "task_id" : taskId
+     "task_id" : taskId,
+     "box_id"  : boxId,
+     "pos"     : this.pos
     },
     success : function (jsonResult) {
      
@@ -2216,46 +2017,94 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status = hashResult["status"];
         var flowId = hashResult["flow_id"];
         var taskId = hashResult["task_id"];
         var boxId  = hashResult["box_id"];
-        var updateTime = hashResult["update_time"];
-        var targetList = hashResult["target_list"];
+        var autoExecBoxId  = hashResult["auto_exec_box_id"];
+        var status         = hashResult["status"];
+        var errorMessage   = hashResult["error_message"];
+        var emptyBoxIdList = hashResult["empty_box_id_list"];
+        var fillBoxIdList  = hashResult["fill_box_id_list"];
+        var existsFlowchartData  = hashResult["exists_flowchart_data"];
+        var existsParameterSheet = hashResult["exists_parameter_sheet"];
+        var pos        = hashResult["pos"];
+        var historyLog = hashResult["history_log"];
+        var forceStop  = hashResult["force_stop"];
         
-        if(status === 1){
-         objUpdateTask.exec = false;
-         
-         if(boxId.match(/^work_/)){
-          objUpdateTask.intervalId = setInterval("objUpdateTask.checkStatus('" + boxId + "')", 15000);
-          objCommon.lockScreen("<div id='" + objUpdateTask.idLockScreenMessage + "'><span>しばらくお待ち下さい。</sapn><img src='img/loading_2.gif' width='16' heigth='16' alt='loading'><br><span>閉じてしまってもオペレーションは継続します。</span><br><span>開き直せばいつでも最新の状態で再開できます。</span></div>");
-         }
-        }
-        else if(status === 2){
-         objUpdateTask.exec = true;
-         
-         if(objUpdateTask.intervalId.length > 0){
+        if(objUpdateTask.intervalId !== null){
+         if((status === 2) || (status === -1)){// 終了
           clearInterval(objUpdateTask.intervalId);
-          objUpdateTask.intervalId = "";
+          objUpdateTask.intervalId = null;
+          
+          objUpdateTask.addHistory(pos, historyLog);
+          objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, existsFlowchartData, forceStop);
+         }
+         else{// 継続中のとき
+          objUpdateTask.addHistory(pos, historyLog);
+          objTelnetmanWorkFlow.changeBoxColor(emptyBoxIdList, fillBoxIdList);
          }
         }
-        
-        if(boxId.match(/^work_/)){
-         objUpdateTask.getWorkData(boxId);
+        else{// 最初に開いたとき。
+         if((status === 0) || (status === 1) || (status === 99)){
+          objUpdateTask.lock();
+         }
+         
+         objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, existsFlowchartData, forceStop);
         }
-        else if(boxId.match(/^case_/)){
-         objUpdateTask.getCaseData(boxId);
-        }
-        else if(boxId.match(/^start_/)){
-         objUpdateTask.getTaskData(boxId) ;
-        }
-        
-        objTelnetmanWorkFlow.highlightBox(boxId, targetList);
        }
       }
+      else{
+       alert("CGI Error");
+      }
      }
-    }
+    },
+    error : function (){
+     alert("Server Error");
+     }
    });
+  }
+ };
+ 
+ 
+ 
+ //
+ // 実行履歴を追記する。
+ //
+ this.addHistory = function (pos, historyLog){
+  var elDiv = document.getElementById(this.idHistoryArea);
+  
+  if((elDiv !== null) && (pos > this.pos)){
+   this.pos = pos;
+   historyLog = objCommon.escapeHtml(historyLog);
+   historyLog = historyLog.replace(/\n/g, "<br>");
+   
+   elDiv.insertAdjacentHTML("beforeend", historyLog);
+   elDiv.scrollTop = elDiv.scrollHeight;
+  }
+ };
+ 
+ 
+ 
+ //
+ // 実行結果に従ってBox を表示する。
+ //
+ this.viewBoxData = function(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, existsFlowchartData, forceStop){
+  objTelnetmanWorkFlow.changeBoxColor(emptyBoxIdList, fillBoxIdList);
+  
+  if(result === 1){
+   if(status === 2){
+    this.getBoxData(boxId);
+   }
+   else if(status === -1){
+    this.getBoxData(autoExecBoxId);
+   }
+   else{
+    this.nextProcess(boxId, status, '', existsParameterSheet, existsFlowchartData, forceStop);
+   }
+  }
+  else{
+   alert(errorMessage);
+   this.unlock(boxId, existsParameterSheet, existsFlowchartData);
   }
  };
  
@@ -2265,14 +2114,11 @@ function updateTask (){
  // work をthrough する。
  //
  this.throughWork = function (workId){
-  var flowId       = objControleStorageS.getFlowId();
-  var taskId       = objControleStorageS.getTaskId();
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.exec = false;
-   this.changeWorkButtonStatus(workId, 1);
-   
-   this.disableCheckBox(true);
+   this.lock(workId);
    
    var checkedNodeList = this.checkNodeList();
    var execNodeList    = checkedNodeList[0];
@@ -2290,7 +2136,7 @@ function updateTask (){
      "flow_id" : flowId,
      "task_id" : taskId,
      "work_id" : workId,
-     "json_exec_node_list" : jsonExecNodeList,
+     "json_exec_node_list"    : jsonExecNodeList,
      "json_through_node_list" : jsonThroughNodeList
     },
     success : function (jsonResult) {
@@ -2309,69 +2155,34 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status = hashResult["status"];
         var flowId = hashResult["flow_id"];
         var taskId = hashResult["task_id"];
-        var workId = hashResult["work_id"];
-        var existsFlowchartData = hashResult["exists_flowchart_data"];
-        var isManualSplit = false;
+        var boxId  = hashResult["box_id"];
+        var autoExecBoxId  = hashResult["auto_exec_box_id"];
+        var status         = hashResult["status"];
+        var errorMessage   = hashResult["error_message"];
+        var emptyBoxIdList = hashResult["empty_box_id_list"];
+        var fillBoxIdList  = hashResult["fill_box_id_list"];
+        var existsParameterSheet = hashResult["exists_parameter_sheet"];
+        var existsFlowchartData  = hashResult["exists_flowchart_data"];
         
-        if(existsFlowchartData === 0){
-         isManualSplit = true;
-        }
-        
-        if(status === 2){
-         var targetList = hashResult["target_list"];
-         objUpdateTask.exec = true;
-         
-         // パラメーターシートをクリック可能状態とexec 対象の表示を更新する。
-         var existsParameterSheet = hashResult["exists_parameter_sheet"];
-         if(existsParameterSheet === 1){
-          var nodeList = hashResult["node_list"];
-          objUpdateTask.makeNodeList(workId, nodeList, true, isManualSplit);
-          targetList.push(workId);
-         }
-         else{
-          objUpdateTask.makeNodeList(workId, [], false, isManualSplit);
-          objUpdateTask.disableParameterSheet(workId);
-         }
-         
-         // through ボタンを変える。
-         objUpdateTask.changeWorkButtonStatus(workId, existsParameterSheet, existsFlowchartData);
-         
-         // box の色を変える。
-         objTelnetmanWorkFlow.highlightBox(workId, targetList);
-        }
-        else if(status === 0){
-         objUpdateTask.exec = true;
-         objUpdateTask.changeWorkButtonStatus(workId, 1, existsFlowchartData);
-         objUpdateTask.disableCheckBox(false);
-        }
+        objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, existsFlowchartData, 0);
        }
        else{
-        objUpdateTask.exec = true;
-        objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-        objUpdateTask.disableCheckBox(false);
-        
         var reason = hashResult["reason"];
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
-       objUpdateTask.exec = true;
-       objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-       objUpdateTask.disableCheckBox(false);
-       
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
-     objUpdateTask.exec = true;
-     objUpdateTask.changeWorkButtonStatus(objUpdateTask.selectedBoxId, 1, 1);
-     objUpdateTask.disableCheckBox(false);
-     
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -2387,13 +2198,12 @@ function updateTask (){
   var taskId       = objControleStorageS.getTaskId();
   
   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-   this.selectedBoxId = boxId;
    var header = objCommon.makeHttpHeader();
    
    $.ajax({
     headers : {"TelnetmanWF" : header},
     type : "post",
-    url  : "/cgi-bin/TelnetmanWF/get_goal_data.cgi",
+    url  : "/cgi-bin/TelnetmanWF/view_goal_data.cgi",
     data : {
      "flow_id" : flowId,
      "task_id" : taskId,
@@ -2415,12 +2225,15 @@ function updateTask (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var status = hashResult["status"];
         var flowId = hashResult["flow_id"];
         var taskId = hashResult["task_id"];
         var boxId  = hashResult["box_id"];
         var updateTime = hashResult["update_time"];
         var existsParameterSheet = hashResult["exists_parameter_sheet"];
+        
+        objUpdateTask.selectedBoxId = boxId;
+        objUpdateTask.existsParameterSheet = existsParameterSheet;
+        objUpdateTask.existsFlowchartData  = 0;
         
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateTask.idTable(boxId));
@@ -2445,7 +2258,6 @@ function updateTask (){
         
         
         elTable.appendChild(elTr1);
-        
         
         
         if(existsParameterSheet === 1){
@@ -2488,21 +2300,23 @@ function updateTask (){
         
         objTelnetmanWorkFlow.changeStroke(boxId);
         
-        var boxDataTableBottom = objUpdateTask.getBoxDataTableBottom(boxId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
+        objUpdateTask.nextProcess(boxId, 2, '', existsParameterSheet, 0, 0);
        }
        else{
         var reason = hashResult["reason"];
         alert(reason);
+        objUpdateTask.unlock();
        }
       }
       else{
        alert("CGI Error");
+       objUpdateTask.unlock();
       }
      }
     },
     error : function (){
      alert("Server Error");
+     objUpdateTask.unlock();
     }
    });
   }
@@ -2515,11 +2329,10 @@ function updateTask (){
  //
  this.deleteParameterSheet = function (boxId){
   if(confirm("本当に削除しますか?")){
-   var flowId       = objControleStorageS.getFlowId();
-   var taskId       = objControleStorageS.getTaskId();
+   var flowId = objControleStorageS.getFlowId();
+   var taskId = objControleStorageS.getTaskId();
    
    if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
-    this.selectedBoxId = boxId;
     var header = objCommon.makeHttpHeader();
     
     $.ajax({
@@ -2559,7 +2372,7 @@ function updateTask (){
           // ノードリストの削除とボタンの変更。
           if(boxId.match(/^work_/)){
            var nodeList = new Array();
-           objUpdateTask.makeNodeList(boxId, nodeList, false, false);
+           objUpdateTask.makeNodeList(boxId, nodeList, false, false, 0);
            objUpdateTask.changeWorkButtonStatus(boxId, 0, 0);
           }
           else if(boxId.match(/^case_/)){
@@ -2567,7 +2380,7 @@ function updateTask (){
           }
           
           // ボックスの色を戻す。
-          objTelnetmanWorkFlow.highlightBox(boxId);
+          objTelnetmanWorkFlow.toEmptyBox(boxId);
          }
         }
        }
@@ -2592,15 +2405,135 @@ function updateTask (){
  this.disableParameterSheet = function (boxId){
   // Parameter Sheet をクリックできないようにする。
   var elSpanParameterSheet = document.getElementById(this.idTakeOverParameterSheet(boxId));
-  elSpanParameterSheet.className = "gray";
-  elSpanParameterSheet.onclick = null;
+  
+  if(elSpanParameterSheet !== null){
+   elSpanParameterSheet.className = "gray";
+   elSpanParameterSheet.onclick = null;
+  }
   
   // 削除ボタンを押せないようにする。
   var elImgDeleteParameterSheet = document.getElementById(this.idDeleteParameterSheet(boxId));
-  elImgDeleteParameterSheet.className = "not-allowed_node";
-  elImgDeleteParameterSheet.onclick = null;
+  
+  if(elImgDeleteParameterSheet !== null){
+   elImgDeleteParameterSheet.className = "not-allowed_node";
+   elImgDeleteParameterSheet.onclick = null;
+  }
  };
  
  
+ 
+ //
+ // 実行履歴を取得する。
+ //
+ this.getHistoryLog = function (){
+  var flowId = objControleStorageS.getFlowId();
+  var taskId = objControleStorageS.getTaskId();
+  
+  if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
+   var html = "<div class='" + this.idLockScreenBoard + "' id='" + this.idLockScreenBoard + "'><div class='" + this.classLockScreenHeader + "'><span>全実行履歴</span><img src='img/cancel.png' width='16' height='16' alt='close' onclick='objCommon.unlockScreen();'></div><div id='" + this.idHistoryArea + "' class='" + this.idHistoryArea + "' contenteditable='true'></div></div>";
+   
+   objCommon.lockScreen(html);
+   
+   var header = objCommon.makeHttpHeader();
+   
+   $.ajax({
+    headers : {"TelnetmanWF" : header},
+    type : "post",
+    url  : "/cgi-bin/TelnetmanWF/text_get_history_log.cgi",
+    data : {
+     "flow_id" : flowId,
+     "task_id" : taskId
+    },
+    success : function (historyLog) {
+     if((historyLog !== null) && (historyLog !== undefined)){
+      var elDiv = document.getElementById(objUpdateTask.idHistoryArea);
+      
+      if(elDiv !== null){
+       historyLog = objCommon.escapeHtml(historyLog);
+       historyLog = historyLog.replace(/\n/g, "<br>");
+       
+       elDiv.innerHTML = historyLog;
+       elDiv.scrollTop = elDiv.scrollHeight;
+      }
+      else{
+       alert("CGI Error");
+       objCommon.unlockScreen();
+      }
+     }
+    },
+    error : function (){
+     alert("Server Error");
+     objCommon.unlockScreen();
+    }
+   });
+  }
+ };
+ 
+ 
+ 
+ //
+ // 強制終了
+ //
+ this.forceStop = function (){
+  if(confirm("本当に強制終了しますか?")){
+   var flowId = objControleStorageS.getFlowId();
+   var taskId = objControleStorageS.getTaskId();
+   
+   if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0) && (taskId !== null) && (taskId !== undefined) && (taskId.length > 0)){
+    document.getElementById(this.idForceStopButton).className = "disable";
+    document.getElementById(this.idForceStopButton).onclick = null;
+    
+    var header = objCommon.makeHttpHeader();
+    
+    $.ajax({
+     headers : {"TelnetmanWF" : header},
+     type : "post",
+     url  : "/cgi-bin/TelnetmanWF/force_stop.cgi",
+     data : {
+      "flow_id" : flowId,
+      "task_id" : taskId
+     },
+     success : function (jsonResult) {
+      
+      if((jsonResult !== null) && (jsonResult !== undefined)){
+       var hashResult = null;
+       
+       try{
+        hashResult = JSON.parse(jsonResult);
+       }
+       catch(error){
+        
+       }
+       
+       if(hashResult !== null){
+        var result = hashResult["result"];
+         
+        if(result === 1){
+         document.getElementById(objUpdateTask.idLockScreenMessage).innerHTML = "<span>強制終了します。</span><br><span>しばらくお待ち下さい。</span>";
+        }
+        else{
+         var reason = hashResult["reason"];
+         alert(reason);
+         document.getElementById(objUpdateTask.idForceStopButton).className = "enable";
+         document.getElementById(objUpdateTask.idForceStopButton).onclick = new Function("objUpdateTask.forceStop();");
+        }
+       }
+       else{
+        alert("CGI Error");
+        document.getElementById(objUpdateTask.idForceStopButton).className = "enable";
+        document.getElementById(objUpdateTask.idForceStopButton).onclick = new Function("objUpdateTask.forceStop();");
+       }
+      }
+     },
+     error : function (){
+      alert("Server Error");
+      document.getElementById(objUpdateTask.idForceStopButton).className = "enable";
+      document.getElementById(objUpdateTask.idForceStopButton).onclick = new Function("objUpdateTask.forceStop();");
+     }
+    });
+   }
+  }
+ };
+
  return(this);
 }

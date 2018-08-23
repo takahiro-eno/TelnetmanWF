@@ -2,6 +2,7 @@
 # 説明   : terminal を新規作成する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/02
+# 更新   : 2018/07/02 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -83,8 +84,8 @@ $access2db -> update_exe;
 #
 # DB に登録。
 #
-my $insert_column = 'vcFlowId,vcTerminalId,vcTerminalTitle,vcTerminalDescription,iActive,iX,iY,iCreateTime,iUpdateTime';
-my @values = ("('" . $flow_id . "','" . $terminal_id . "','" . $title . "','',1," . $x . "," . $y . "," . $time . "," . $time . ")");
+my $insert_column = 'vcFlowId,vcTerminalId,vcTerminalTitle,vcTerminalDescription,iActive,iX,iY,vcAutoExecBoxId,iCreateTime,iUpdateTime';
+my @values = ("('" . $flow_id . "','" . $terminal_id . "','" . $title . "','',1," . $x . "," . $y . ",''," . $time . "," . $time . ")");
 $table = 'T_Terminal';
 $access2db -> set_insert($insert_column, \@values, $table);
 $access2db -> insert_exe;

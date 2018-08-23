@@ -2,6 +2,7 @@
 # 説明   : terminal のタイトル、説明と配置を更新する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/02
+# 更新   : 2018/07/02 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -81,6 +82,19 @@ my $json_start_link_vertices = &JSON::to_json($start_link_vertices);
 my $terminal_id = $cgi -> param('terminal_id');
 my $terminal_title       = $cgi -> param('terminal_title');
 my $terminal_description = $cgi -> param('terminal_description');
+my $auto_exec_box_id     = $cgi -> param('auto_exec_box_id');
+
+unless(defined($terminal_title)){
+ $terminal_title = '';
+}
+
+unless(defined($terminal_description)){
+ $terminal_description = '';
+}
+
+unless(defined($auto_exec_box_id)){
+ $auto_exec_box_id = '';
+}
 
 
 
@@ -184,6 +198,7 @@ while(my ($_terminal_id, $ref_terminal_data) = each(%$terminal_list)){
  if($_terminal_id eq $terminal_id){
   push(@set, "vcTerminalTitle = '" . &Common_sub::escape_sql($terminal_title) . "'");
   push(@set, "vcTerminalDescription = '" . &Common_sub::escape_sql($terminal_description) . "'");
+  push(@set, "vcAutoExecBoxId = '" . $auto_exec_box_id . "'");
   push(@set, 'iUpdateTime = ' . $time);
  }
  
@@ -196,11 +211,11 @@ while(my ($_terminal_id, $ref_terminal_data) = each(%$terminal_list)){
 $access2db -> close;
 
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'terminal_id' => $terminal_id,
+ 'result'         => 1,
+ 'flow_id'        => $flow_id,
+ 'terminal_id'    => $terminal_id,
  'terminal_title' => $terminal_title,
- 'update_time' => $time
+ 'update_time'    => $time
 );
 
 my $json_results = &JSON::to_json(\%results);

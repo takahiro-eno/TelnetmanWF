@@ -90,6 +90,9 @@ if(defined($task_id) && (length($task_id) > 0)){
  $access2db -> set_select($select_column, $table, $condition);
  $task_title = $access2db -> select_col1;
 }
+else{
+ $task_id = '';
+}
 
 
 $access2db -> close;
@@ -99,7 +102,11 @@ $access2db -> close;
 #
 # flow data をまとめる。
 #
-my %results = ('result' => 1);
+my %results = (
+ 'result' => 1,
+ 'flow_id' => $flow_id,
+ 'task_id' => $task_id
+);
 
 my $flow_title               = $ref_flow -> [0];
 my $flow_description         = $ref_flow -> [1];

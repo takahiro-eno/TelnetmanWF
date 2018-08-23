@@ -1,6 +1,7 @@
 // 説明   : local storage, session storage に値を入れたり、出したりする。
 // 作成日 : 2015/05/08
 // 作成者 : 江野高広
+// 更新   : 2018/06/28 work, case のタイトル一覧、boxId 一覧の追加。
 
 var storageL = localStorage;
 var objControleStorageL = new controleStorageL();
@@ -393,5 +394,96 @@ function controleStorageS () {
   storageS.removeItem(this.keyLoginUser());
  };
  
+ 
+ // work, case のタイトル一覧
+ this.keyBoxTitle = function (boxId){
+  return(this.prefix + "boxTitle_" + boxId);
+ };
+ 
+ this.getBoxTitle = function (boxId){
+  var boxTitle = storageS.getItem(this.keyBoxTitle(boxId));
+  
+  if(boxTitle === null){
+   boxTitle = "";
+  }
+  
+  return(boxTitle);
+ };
+ 
+ this.setBoxTitle = function (boxId, boxTitle){
+  storageS.setItem(this.keyBoxTitle(boxId), boxTitle);
+ };
+ 
+ this.removeBoxTitle = function(boxId){
+  storageS.removeItem(this.keyBoxTitle(boxId));
+ };
+ 
+ 
+ // boxId 一覧
+ this.keyBoxIdList = function(boxType){
+  return(this.prefix + boxType + "IdList");
+ };
+ 
+ this.getBoxIdList = function(boxType){
+  var jsonBoxIdList = storageS.getItem(this.keyBoxIdList(boxType));
+  var boxIdList = null;
+  
+  if(jsonBoxIdList !== null){
+   boxIdList = JSON.parse(jsonBoxIdList);
+  }
+  else{
+   boxIdList = new Array();
+  }
+  
+  return(boxIdList);
+ };
+ 
+ this.setBoxIdList = function(boxType, boxIdList){
+  boxIdList.sort(function(a, b){
+   var splitIdA = a.split("_");
+   var splitIdB = b.split("_");
+   
+   var aIndex = parseInt(splitIdA[1], 10);
+   var bIndex = parseInt(splitIdB[1], 10);
+   
+   if(aIndex < bIndex){
+    return(-1);
+   }
+   else if(aIndex > bIndex){
+    return(1);
+   }
+   else{
+    return(0);
+   }
+  });
+  
+  var jsonBoxIdList = JSON.stringify(boxIdList);
+  
+  storageS.setItem(this.keyBoxIdList(boxType), jsonBoxIdList);
+ };
+ 
+ this.pushBoxIdList = function(boxType, boxId){
+  var boxIdList = this.getBoxIdList(boxType);
+  boxIdList.push(boxId);
+  
+  var jsonBoxIdList = JSON.stringify(boxIdList);
+  storageS.setItem(this.keyBoxIdList(boxType), jsonBoxIdList);
+ };
+ 
+ this.spliceBoxIdList = function(boxType, boxId){
+  var boxIdList = this.getBoxIdList(boxType);
+  
+  for(var i = boxIdList.length - 1; i >= 0; i --){
+   if(boxIdList[i] === boxId){
+    boxIdList.splice(i, 1);
+    break;
+   }
+  }
+  
+  var jsonBoxIdList = JSON.stringify(boxIdList);
+  storageS.setItem(this.keyBoxIdList(boxType), jsonBoxIdList);
+ };
+ 
+  
  return(this);
 }

@@ -1,0 +1,6 @@
+*/1 * * * * apache perl /usr/local/TelnetmanWF/pl/check_status.pl
+*/1 * * * * apache perl /usr/local/TelnetmanWF/pl/check_status.pl -w 10
+*/1 * * * * apache perl /usr/local/TelnetmanWF/pl/check_status.pl -w 20
+*/1 * * * * apache perl /usr/local/TelnetmanWF/pl/check_status.pl -w 30
+*/1 * * * * apache perl /usr/local/TelnetmanWF/pl/check_status.pl -w 40
+*/1 * * * * apache perl /usr/local/TelnetmanWF/pl/check_status.pl -w 50

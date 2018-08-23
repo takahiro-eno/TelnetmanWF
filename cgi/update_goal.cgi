@@ -1,9 +1,7 @@
 #!/usr/bin/perl
-# 説明   : flow のタイトル、説明、デフォルトのログイン情報と配置を更新する。
+# 説明   : Goal の自動実行設定を保存する。
 # 作成者 : 江野高広
-# 作成日 : 2015/05/16
-# 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
-# 更新   : 2018/06/27 user, password を追加。
+# 作成日 : 2018/07/02
 
 use strict;
 use warnings;
@@ -77,30 +75,13 @@ my $json_start_link_vertices = &JSON::to_json($start_link_vertices);
 
 
 #
-# flow のタイトル、説明、デフォルトのログイン情報を受取る。
+# 自動実行対象を受取る。
 #
-my $box_id                       = $cgi -> param('box_id');
-my $flow_description             = $cgi -> param('flow_description');
-my $default_login_info_file_name = $cgi -> param('default_login_info_file_name');
-my $default_login_info_data      = $cgi -> param('default_login_info_data');
-my $user                         = $cgi -> param('user');
-my $password                     = $cgi -> param('password');
-my $enable_password              = $cgi -> param('enable_password');
+my $auto_exec_box_id = $cgi -> param('auto_exec_box_id');
 
-unless(defined($user)){
- $user = '';
+unless(defined($auto_exec_box_id)){
+ $auto_exec_box_id = '';
 }
-
-unless(defined($password)){
- $password = '';
-}
-
-unless(defined($enable_password)){
- $enable_password = '';
-}
-
-my $encoded_password        = &TelnetmanWF_common::encode_password($password);
-my $encoded_enable_password = &TelnetmanWF_common::encode_password($enable_password);
 
 
 
@@ -108,18 +89,14 @@ my $encoded_enable_password = &TelnetmanWF_common::encode_password($enable_passw
 # T_Flow の更新
 #
 my @set = (
- "vcFlowDescription = '" . &Common_sub::escape_sql($flow_description) . "'",
  'iX = ' . $start_x,
  'iY = ' . $start_y,
  "vcStartLinkTarget = '" . $json_start_link_target . "'",
  "txStartLinkVertices = '" . $json_start_link_vertices . "'",
  'iGoalX = ' . $goal_x,
  'iGoalY = ' . $goal_y,
- 'iPaperHieght = ' . $paper_height,
- "vcLoginInfo = '" . &Common_sub::escape_sql($default_login_info_file_name) . "'",
- "vcUser = '" . &Common_sub::escape_sql($user) . "'",
- "vcPassword = '" . &Common_sub::escape_sql($encoded_password) . "'",
- "vcEnablePassword = '" . &Common_sub::escape_sql($encoded_enable_password) . "'"
+ "vcAutoExecBoxId = '" . $auto_exec_box_id . "'",
+ 'iPaperHieght = ' . $paper_height
 );
 my $table     = 'T_Flow';
 my $condition = "where vcFlowId = '" . $flow_id . "'";
@@ -197,7 +174,7 @@ while(my ($case_id, $ref_case_data) = each(%$case_list)){
 #
 # T_Terminal の更新
 #
-while(my ($terminal_id, $ref_terminal_data) = each(%$terminal_list)){
+while(my ($_terminal_id, $ref_terminal_data) = each(%$terminal_list)){
  my $terminal_x = $ref_terminal_data -> {'x'};
  my $terminal_y = $ref_terminal_data -> {'y'};
  
@@ -207,35 +184,16 @@ while(my ($terminal_id, $ref_terminal_data) = each(%$terminal_list)){
  );
  
  my $table     = 'T_Terminal';
- my $condition = "where vcFlowId = '" . $flow_id . "' and vcTerminalId = '" . $terminal_id . "'";
+ my $condition = "where vcFlowId = '" . $flow_id . "' and vcTerminalId = '" . $_terminal_id . "'";
  $access2db -> set_update(\@set, $table, $condition);
  my $count = $access2db -> update_exe;
 }
 
 $access2db -> close;
 
-#
-# loginInfo の更新
-#
-my $file_default_login_info = &Common_system::file_default_login_info($flow_id);
-
-if((length($default_login_info_file_name) == 0) && (-f $file_default_login_info)){
- unlink($file_default_login_info);
-}
-elsif((length($default_login_info_file_name) > 0) && (length($default_login_info_data) > 0)){
- open(DLOGIN, '>', $file_default_login_info);
- flock(DLOGIN, 2);
- print DLOGIN $default_login_info_data;
- close(DLOGIN);
-}
-
-
-
 my %results = (
- 'result'      => 1,
- 'flow_id'     => $flow_id,
- 'box_id'      => $box_id,
- 'update_time' => $time
+ 'result'         => 1,
+ 'flow_id'        => $flow_id
 );
 
 my $json_results = &JSON::to_json(\%results);

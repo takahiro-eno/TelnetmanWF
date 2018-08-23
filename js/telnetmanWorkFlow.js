@@ -1,7 +1,7 @@
 // 説明   : joint.js の操作画面。
 // 作成日 : 2015/05/08
 // 作成者 : 江野高広
-// 更新   : 2018/03/16 case を編集途中で削除しようとするとError になるバグを修正。
+// 更新   : 2018/03/16 case の編集途中で削除しようとするとError になるバグを修正。
 
 var objTelnetmanWorkFlow = new telnetmanWorkFlow();
 
@@ -465,6 +465,9 @@ function telnetmanWorkFlow (){
        var result = hashResult["result"];
        
        if(result === 1){
+        var flowId = hashResult["flow_id"];
+        var taskId = hashResult["task_id"];
+        
         // objTelnetmanWorkFlow.startData
         //x : 90, y : 20, start_link_target : {x:120, y:160}, start_link_vertices : [{},{},{}]
         var flowTitle         = hashResult["flow_title"];
@@ -478,9 +481,12 @@ function telnetmanWorkFlow (){
         var startLinkTarget   = hashResult["start_data"]["start_link_target"];
         var startLinkVertices = hashResult["start_data"]["start_link_vertices"];
         
+        var workIdList = new Array();
+        var caseIdList = new Array();
+        
         document.getElementById(objTelnetmanWorkFlow.idFlowTitleArea).innerHTML = flowTitle;
         
-        if(taskTitle.length > 0){
+        if(taskId.length > 0){
          document.getElementById(objTelnetmanWorkFlow.idTaskTitleArea).innerHTML = taskTitle;
         }
         
@@ -575,7 +581,12 @@ function telnetmanWorkFlow (){
            objTelnetmanWorkFlow.workDataList[workId]["through_link_vertices"][i][key] = value;
           }
          }
+         
+         objControleStorageS.setBoxTitle(workId, workTitle);
+         workIdList.push(workId);
         }
+        
+        objControleStorageS.setBoxIdList("work", workIdList);
         
         
         // caseDataList
@@ -620,14 +631,19 @@ function telnetmanWorkFlow (){
            }
           }
          }
+         
+         objControleStorageS.setBoxTitle(caseId, caseTitle);
+         caseIdList.push(caseId);
         }
+        
+        objControleStorageS.setBoxIdList("case", caseIdList);
         
         
         // terminalDataList
         for(var terminalId in hashResult["terminal_list"]){
-         var terminalTitle        = hashResult["terminal_list"][terminalId]["title"];
-         var terminalX            = hashResult["terminal_list"][terminalId]["x"];
-         var terminalY            = hashResult["terminal_list"][terminalId]["y"];
+         var terminalTitle = hashResult["terminal_list"][terminalId]["title"];
+         var terminalX     = hashResult["terminal_list"][terminalId]["x"];
+         var terminalY     = hashResult["terminal_list"][terminalId]["y"];
          
          objTelnetmanWorkFlow.terminalDataList[terminalId] = new Object();
          
@@ -1320,9 +1336,9 @@ function telnetmanWorkFlow (){
  
  
  //
- // 次の行き先の色を変える。
+ // Box の色を変える。
  //
- this.highlightBox = function (boxId, targetBoxIdList){
+ this.toEmptyBox = function (boxId){
   var box = this.graph.getCell(boxId);
 
   if(boxId.match(/^work_/)){
@@ -1331,25 +1347,44 @@ function telnetmanWorkFlow (){
   else if(boxId.match(/^case_/)){
    box.attr({rect: {fill: "#909090"}, text: {fill: "#f0f0f0"}});
   }
-
-  if((targetBoxIdList !== null) && (targetBoxIdList !== undefined)){ 
-   for(var k = 0, l = targetBoxIdList.length; k < l; k ++){
-    var taregtBoxId = targetBoxIdList[k];
+ };
+ 
+ this.changeBoxColor = function (emptyBoxIdList, fillBoxIdList){
+  if((emptyBoxIdList !== null) && (emptyBoxIdList !== undefined)){
+   for(var i = 0, j = emptyBoxIdList.length; i < j; i ++){
+    var emptyBoxId = emptyBoxIdList[i];
     
-    if(taregtBoxId.length > 0){
-     var targetBox = this.graph.getCell(taregtBoxId);
+    if(emptyBoxId.length > 0){
+     var emptyBox = this.graph.getCell(emptyBoxId);
      
-     if(taregtBoxId.match(/^work_/)){
-      targetBox.attr({rect: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
+     if(emptyBoxId.match(/^work_/)){
+      emptyBox.attr({rect: {fill: "#f0f0ff"}, text: {fill: "#505050"}});
      }
-     else if(taregtBoxId.match(/^case_/)){
-      targetBox.attr({rect: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
+     else if(emptyBoxId.match(/^case_/)){
+      emptyBox.attr({rect: {fill: "#909090"}, text: {fill: "#f0f0f0"}});
      }
-     else if(taregtBoxId.match(/^terminal_/)){
-      targetBox.attr({rect: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
+    }
+   }
+  }
+  
+  if((fillBoxIdList !== null) && (fillBoxIdList !== undefined)){ 
+   for(var k = 0, l = fillBoxIdList.length; k < l; k ++){
+    var fillBoxId = fillBoxIdList[k];
+    
+    if(fillBoxId.length > 0){
+     var fillBox = this.graph.getCell(fillBoxId);
+     
+     if(fillBoxId.match(/^work_/)){
+      fillBox.attr({rect: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
      }
-     else if(taregtBoxId.match(/^goal_/)){
-      targetBox.attr({circle: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
+     else if(fillBoxId.match(/^case_/)){
+      fillBox.attr({rect: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
+     }
+     else if(fillBoxId.match(/^terminal_/)){
+      fillBox.attr({rect: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
+     }
+     else if(fillBoxId.match(/^goal_/)){
+      fillBox.attr({circle: {fill: "#556B2F"}, text: {fill: "#fffae0"}});
      }
     }
    }
@@ -1385,34 +1420,11 @@ function telnetmanWorkFlow (){
  //
  // 画面の縦幅に合わせて流れ図の表示領域の高さを決める。
  //
- this.optimizeWorkflowAreaHeight = function (tableBottom){
-  if((tableBottom !== null) && (tableBottom !== undefined)){
-   tableBottom += 20;
-  }
-  else{
-   tableBottom = 0;
-  }
+ this.optimizeWorkflowAreaHeight = function (){
+  workflowAreaHeight = objCommon.getBrowserHeight();
+  var stringWorkflowAreaHeight = workflowAreaHeight.toString();
   
-  var headerHeight = 100;
-  var headerBoder = 10;
-  var headerMarginBottom = 10;
-  var workFlowAreaPadding = 30;
-  var browserHeight = objCommon.getBrowserHeight();
-  
-  var workFlowAreaHeight = 0;
-  if(browserHeight >= tableBottom){
-   workFlowAreaHeight = browserHeight - headerHeight - headerBoder - headerMarginBottom - workFlowAreaPadding * 2 - 10;
-  }
-  else{
-   workFlowAreaHeight = tableBottom - headerHeight - headerBoder - headerMarginBottom - workFlowAreaPadding * 2 - 10;
-  }
-  
-  if(workFlowAreaHeight < this.paperHeight){
-   document.getElementById(this.idWorkFlowArea).style.height = workFlowAreaHeight + "px";
-  }
-  else{
-   document.getElementById(this.idWorkFlowArea).style.height = (this.paperHeight + 4) + "px";
-  }
+  document.getElementById(this.idWorkFlowArea).style.height = stringWorkflowAreaHeight + "px";
  };
  
  

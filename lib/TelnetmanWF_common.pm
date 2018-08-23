@@ -4,6 +4,8 @@
 # 作成日 : 2015/04/09
 # 更新 2015/12/08 : 個別パラメーターシートを使えるように。
 # 更新 2018/03/15 : SJIS, UTF8 両方のログをダウンロードする。
+# 更新 2018/07/18 : work, case 実行に関するサブルーチンをExec_box.pm に移動。
+# 更新 2018/08/09 : 自動実行に対応。
 
 use strict;
 use warnings;
@@ -14,7 +16,8 @@ use LWP::UserAgent;
 use HTTP::Request::Common;
 use JSON;
 use File::Copy;
-use Archive::Zip;# sudo yum install perl-Archive-Zip
+use Crypt::CBC;
+use MIME::Base64;
 
 use lib '/usr/local/TelnetmanWF/lib';
 use Common_sub;
@@ -36,7 +39,7 @@ sub access2Telnetman {
  $ua -> default_header('telnetmanAuth' => 'Telnetman ' . $header1 . ' ' . $header2);
  
  my $request = &HTTP::Request::Common::POST(
-  'https://' . $telnetman . '/cgi-bin/Telnetman2/' . $cgi,
+  'https://' . $telnetman . ':443/cgi-bin/Telnetman2/' . $cgi,
   Content_Type => 'form-data',
   Content => $ref_parameter
  );
@@ -73,7 +76,7 @@ sub access2TelnetmanText {
  $ua -> default_header('telnetmanAuth' => 'Telnetman ' . $header1 . ' ' . $header2);
  
  my $request = &HTTP::Request::Common::POST(
-  'https://' . $telnetman . '/cgi-bin/Telnetman2/' . $cgi,
+  'https://' . $telnetman . ':443/cgi-bin/Telnetman2/' . $cgi,
   Content_Type => 'form-data',
   Content => $ref_parameter
  );
@@ -143,6 +146,56 @@ sub check_password {
  return($check);
 }
 
+
+
+#
+# パスワードをエンコード、デコード
+#
+sub encode_password {
+ my $plain_password = $_[0];
+ 
+ unless(defined($plain_password) && (length($plain_password) > 0)){
+  return('');
+ }
+ 
+ my $cipher = Crypt::CBC->new({'key'            => 'Telnetman2TelnetmanWF2018https://github.com/takahiro-eno',
+                               'cipher'         => 'Blowfish',
+                               'iv'             => '20140609',
+                               'regenerate_key' => 0,
+                               'padding'        => 'space',
+                               'prepend_iv'     => 0
+                             });
+
+ my $cipher_password = $cipher -> encrypt($plain_password);
+ my $encoded_password = &MIME::Base64::encode_base64($cipher_password);
+
+ if($encoded_password =~ /\n/){
+  $encoded_password =~ s/\n//g;
+ }
+ 
+ return($encoded_password);
+}
+
+sub decode_password {
+ my $encoded_password = $_[0];
+ 
+ unless(defined($encoded_password) && (length($encoded_password) > 0)){
+  return('');
+ }
+ 
+ my $cipher = Crypt::CBC->new({'key'            => 'Telnetman2TelnetmanWF2018https://github.com/takahiro-eno',
+                               'cipher'         => 'Blowfish',
+                               'iv'             => '20140609',
+                               'regenerate_key' => 0,
+                               'padding'        => 'space',
+                               'prepend_iv'     => 0
+                             });
+ 
+ my $cipher_password = &MIME::Base64::decode_base64($encoded_password);
+ my $plain_password = $cipher -> decrypt($cipher_password);
+ 
+ return($plain_password);
+}
 
 
 #
@@ -237,28 +290,34 @@ sub login_user {
 
 
 #
-# 最終実行時刻とステータスを更新する。
+# Work の最終実行時刻とステータスを更新する。
 #
-sub update_status {
- my $access2db = $_[0];
- my $flow_id = $_[1];
- my $task_id = $_[2];
- my $box_id  = $_[3];
- my $status  = $_[4];
- my $login_id   = $_[5];
- my $session_id = $_[6];
- my $ref_target_id_list = $_[7];
+sub update_work_status {
+ my $access2db     = $_[0];
+ my $flow_id       = $_[1];
+ my $task_id       = $_[2];
+ my $work_id       = $_[3];
+ my $status        = $_[4];
+ my $error_message = $_[5];
+ my $login_id      = $_[6];
+ my $session_id    = $_[7];
  my $time = time;
  
+ my $escaped_error_message = '';
+ if(defined($error_message)){
+  $escaped_error_message = &Common_sub::escape_sql($error_message);
+ }
+ 
  my $select_column = 'count(*)';
- my $table         = 'T_LastStatus';
- my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcBoxId = '" . $box_id . "'";
+ my $table         = 'T_WorkList';
+ my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcWorkId = '" . $work_id . "'";
  $access2db -> set_select($select_column, $table, $condition);
  my $count = $access2db -> select_col1;
  
  if($count == 1){
   my @set = (
    'iStatus = ' . $status,
+   "vcErrorMessage = '" . $escaped_error_message . "'",
    'iUpdateTime = ' . $time
   );
   
@@ -268,11 +327,6 @@ sub update_status {
   
   if(defined($session_id)){
    push(@set, "vcSessionId = '" . $session_id . "'");
-  }
-  
-  if(defined($ref_target_id_list)){
-   my $json_target_id_list = &JSON::to_json($ref_target_id_list);
-   push(@set, "vcTargetIdList = '" . $json_target_id_list . "'");
   }
   
   $access2db -> set_update(\@set, $table, $condition);
@@ -287,15 +341,15 @@ sub update_status {
    $session_id = '';
   }
   
-  my $json_target_id_list = '[]';
-  if(defined($ref_target_id_list)){
-   $json_target_id_list = &JSON::to_json($ref_target_id_list);
-  }
-  
-  my $insert_column = 'vcFlowId,vcTaskId,vcBoxId,iStatus,vcLoginId,vcSessionId,vcTargetIdList,iCreateTime,iUpdateTime';
-  my @values = ("('" . $flow_id . "','" . $task_id . "','" . $box_id . "'," . $status . ",'" . $login_id . "','" . $session_id . "','" . $json_target_id_list . "'," . $time . "," . $time .")");
+  my $insert_column = 'vcFlowId,vcTaskId,vcWorkId,iStatus,vcErrorMessage,vcLoginId,vcSessionId,iCreateTime,iUpdateTime';
+  my @values = ("('" . $flow_id . "','" . $task_id . "','" . $work_id . "'," . $status . ",'" . $escaped_error_message . "','" . $login_id . "','" . $session_id . "'," . $time . "," . $time .")");
   $access2db -> set_insert($insert_column, \@values, $table);
   $access2db -> insert_exe;
+ }
+ 
+ # エラー終了の場合はqueue 全てから削除。
+ if($status == -1){
+  &Exec_box::delete_queue($access2db, $flow_id, $task_id);
  }
  
  $time += 0;
@@ -306,38 +360,193 @@ sub update_status {
 
 
 #
-# 最終実行時刻とステータスを取得する。
+# Work の最終実行時刻とステータスを取得する。
 #
-sub check_status {
+sub check_work_status {
  my $access2db = $_[0];
- my $flow_id = $_[1];
- my $task_id = $_[2];
- my $box_id  = $_[3];
+ my $flow_id   = $_[1];
+ my $task_id   = $_[2];
+ my $work_id   = $_[3];
  
- my $select_column = 'iStatus,iUpdateTime,vcTargetIdList';
- my $table         = 'T_LastStatus';
- my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcBoxId = '" . $box_id . "'";
+ my $select_column = 'iStatus,vcErrorMessage,iUpdateTime';
+ my $table         = 'T_WorkList';
+ my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcWorkId = '" . $work_id . "'";
  $access2db -> set_select($select_column, $table, $condition);
- my $ref_status = $access2db -> select_cols;
+ my $ref_WorkList = $access2db -> select_cols;
  
- my $status = 0;
+ my $status = 2;
+ my $error_message = '';
  my $update_time = 0;
- my $json_target_id_list = '[]';
  
- if(scalar(@$ref_status) > 0){
-  $status      = $ref_status -> [0];
-  $update_time = $ref_status -> [1];
-  $json_target_id_list = $ref_status -> [2];
+ if(scalar(@$ref_WorkList) > 0){
+  $status        = $ref_WorkList -> [0];
+  $error_message = $ref_WorkList -> [1];
+  $update_time   = $ref_WorkList -> [2];
   
   $status += 0;
   $update_time += 0;
  }
  
- my $ref_target_id_list = &JSON::from_json($json_target_id_list);
- 
- return($status, $update_time, $ref_target_id_list);
+ return($status, $error_message, $update_time);
 }
 
+
+
+#
+# 実行中のWork があるか確認。
+#
+sub exist_running_work {
+ my $access2db = $_[0];
+ my $flow_id   = $_[1];
+ my $task_id   = $_[2];
+ my $status    = $_[3];
+ 
+ my $extra_condition_1 = '';
+ if(defined($task_id) && (length($task_id) > 0)){
+  $extra_condition_1 = " and vcTaskId = '" . $task_id . "'";
+ }
+ 
+ my $extra_condition_2 = ' and iStatus in (0, 1, 99)';
+ if(defined($status) && (length($status) > 0)){
+  $extra_condition_2 = ' and iStatus = ' . $status;
+ }
+ 
+ my $select_column = 'count(*)';
+ my $table         = 'T_WorkList';
+ my $condition     = "where vcFlowId = '" . $flow_id . "'" . $extra_condition_1 . $extra_condition_2;
+ $access2db -> set_select($select_column, $table, $condition);
+ my $running_count = $access2db -> select_col1;
+ 
+ if($running_count > 0){
+  return(1);
+ }
+ else{
+  return(0);
+ }
+}
+
+
+
+#
+# パラメーターシートが無いBox, 有るBox の一覧を作る。
+#
+sub make_box_id_list {
+ my $access2db = $_[0];
+ my $flow_id   = $_[1];
+ my $task_id   = $_[2];
+ 
+ my $select_column = 'vcWorkId';
+ my $table         = 'T_Work';
+ my $condition     = "where vcFlowId = '" . $flow_id . "' and iActive = 1";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $ref_work = $access2db -> select_array_col1;
+ 
+ $select_column = 'vcCaseId';
+ $table         = 'T_Case';
+ $condition     = "where vcFlowId = '" . $flow_id . "' and iActive = 1";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $ref_case = $access2db -> select_array_col1;
+ 
+ $select_column = 'vcTerminalId';
+ $table         = 'T_Terminal';
+ $condition     = "where vcFlowId = '" . $flow_id . "' and iActive = 1";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $ref_terminal = $access2db -> select_array_col1;
+ 
+ my @empty_box_id_list = ();
+ my @fill_box_id_list  = ();
+ foreach my $box_id (@$ref_work, @$ref_case, @$ref_terminal, 'goal_circle'){
+  my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $box_id);
+  
+  if(-f $file_parameter_sheet){
+   push(@fill_box_id_list, $box_id);
+  }
+  else{
+   push(@empty_box_id_list, $box_id);
+  }
+ }
+ 
+ return(\@empty_box_id_list, \@fill_box_id_list);
+}
+
+
+
+#
+# Case の実行時刻を記録する。
+#
+sub update_case_status {
+ my $access2db     = $_[0];
+ my $flow_id       = $_[1];
+ my $task_id       = $_[2];
+ my $case_id       = $_[3];
+ my $status        = $_[4];
+ my $error_message = $_[5];
+ my $time = time; 
+ 
+ my $escaped_error_message = '';
+ if(defined($error_message)){
+  $escaped_error_message = &Common_sub::escape_sql($error_message);
+ }
+ 
+ my $select_column = 'count(*)';
+ my $table         = 'T_CaseList';
+ my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcCaseId = '" . $case_id . "'";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $count = $access2db -> select_col1;
+ 
+ if($count == 1){
+  my @set = (
+   'iStatus = ' . $status,
+   "vcErrorMessage = '" . $escaped_error_message . "'",
+   'iUpdateTime = ' . $time
+  );
+  
+  $access2db -> set_update(\@set, $table, $condition);
+  $access2db -> update_exe;
+ }
+ elsif($count == 0){
+  my $insert_column = 'vcFlowId,vcTaskId,vcCaseId,iStatus,vcErrorMessage,iCreateTime,iUpdateTime';
+  my @values = ("('" . $flow_id . "','" . $task_id . "','" . $case_id . "'," . $status . ",'" . $escaped_error_message . "'," . $time . "," . $time .")");
+  $access2db -> set_insert($insert_column, \@values, $table);
+  $access2db -> insert_exe;
+ }
+ 
+ $time += 0;
+ 
+ return($time);
+}
+
+
+#
+# Case の最終実行時刻とstatus を確認する。
+#
+sub check_case_status {
+ my $access2db = $_[0];
+ my $flow_id   = $_[1];
+ my $task_id   = $_[2];
+ my $case_id   = $_[3];
+ 
+ my $select_column = 'iStatus,vcErrorMessage,iUpdateTime';
+ my $table         = 'T_CaseList';
+ my $condition     = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcCaseId = '" . $case_id . "'";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $ref_CaseList = $access2db -> select_cols;
+ 
+ my $status = 2;
+ my $error_message = '';
+ my $update_time = 0;
+ 
+ if(scalar(@$ref_CaseList) > 0){
+  $status        = $ref_CaseList -> [0];
+  $error_message = $ref_CaseList -> [1];
+  $update_time   = $ref_CaseList -> [2];
+  
+  $status += 0;
+  $update_time += 0;
+ }
+ 
+ return($status, $error_message, $update_time);
+}
 
 
 #
@@ -441,10 +650,6 @@ sub parse_parameter_sheet {
    
    if(defined($ref_variable_row -> [$i]) && (length($ref_variable_row -> [$i]) > 0)){
     my $value = $ref_variable_row -> [$i];
-    
-    #if(($value eq '_BLANK_') || ($value eq '_DUMMY_')){
-    # $value = '';
-    #}
     
     if(defined($interface) && (length($interface) > 0)){# interface 定義行
      $interface_info{$node} -> {$interface} -> {$variable_name} = $value;
@@ -574,7 +779,7 @@ sub restore_ref_parameter_sheet {
 
 
 #
-# 既存のパラメーターシートに新しいパラメーターシートを結合したものを保存する。。
+# 既存のパラメーターシートに新しいパラメーターシートを結合したものを保存する。
 #
 sub push_parameter_sheet {
  my $file_parameter_sheet = $_[0];
@@ -761,425 +966,25 @@ sub extract_parameter_sheet {
 
 
 #
-# telnet 終了後の処理
+# 流れ図があるかどうか確認する。
 #
-sub end_of_telnet {
- my $access2db           = $_[0];
- my $flow_id             = $_[1];
- my $task_id             = $_[2];
- my $work_id             = $_[3];
- my $login_id            = $_[4];
- my $session_id          = $_[5];
- my $ref_node_status     = $_[6];
- my $use_parameter_sheet = $_[7];# 個別パラメーターシートを使ったかどうか。
- my $time = time;
- my $this_process_ok_target_id = '';
- my $this_process_ng_target_id = '';
+sub exists_flowchart_data {
+ my $access2db = $_[0];
+ my $flow_id   = $_[1];
+ my $work_id   = $_[2];
  
- # 過去ログ置き場の作成
- my $dir_old_log = &Common_system::dir_old_log($flow_id, $task_id, $work_id, $time);
- mkdir($dir_old_log, 0755);
- 
- if($< == 0){
-  chown(48, 48, $dir_old_log);
- }
- 
- # 既存のパラメーターシートを読み取る。
- my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $work_id);
- open(PSHEET, '<', $file_parameter_sheet);
- my $json_existing_parameter_sheet = <PSHEET>;
- close(PSHEET);
- 
- # 既存のパラメーターシートを過去ログ置き場に移動。
- my $file_old_parameter_sheet = &Common_system::file_old_parameter_sheet($flow_id, $task_id, $work_id, $time);
- &File::Copy::move($file_parameter_sheet, $file_old_parameter_sheet);
- 
- # 個別パラメーターシートがあれば過去ログ置き場に移動。
- if($use_parameter_sheet == 1){
-  my $file_parameter_sheet_individual = &Common_system::file_parameter_sheet_individual($flow_id, $task_id, $work_id);
-  
-  if(-f $file_parameter_sheet_individual){
-   my $file_old_parameter_sheet_individual = &Common_system::file_old_parameter_sheet_individual($flow_id, $task_id, $work_id, $time);
-   &File::Copy::move($file_parameter_sheet_individual, $file_old_parameter_sheet_individual);
-  }
- }
- 
- # 次の行き先とok log をパラメーターシートに加える必要があるかどうか確認する。 
- my $select_column = 'vcOkLinkTarget,vcNgLinkTarget,iBondParameterSheet';
- my $table         = 'T_Work';
+ my $select_column = 'vcFlowchartBefore,vcFlowchartMiddle,vcFlowchartAfter';
+ my $table         = 'T_File';
  my $condition     = "where vcFlowId = '" . $flow_id . "' and vcWorkId = '" . $work_id . "'";
  $access2db -> set_select($select_column, $table, $condition);
- my $ref_work = $access2db -> select_cols;
+ my $ref_file_names = $access2db -> select_cols;
  
- my $json_ok_target = $ref_work -> [0];
- my $json_ng_target = $ref_work -> [1];
- my $bond = $ref_work -> [2];
- 
- # 次の行き先のログ置き場を作る。
- my $ref_ok_target = &JSON::from_json($json_ok_target);
- my $ref_ng_target = &JSON::from_json($json_ng_target);
- my $ok_target_id = '';
- my $ng_target_id = '';
- if(exists($ref_ok_target -> {'id'}) && ($ref_ok_target -> {'id'} !~ /^start_/)){
-  $ok_target_id = $ref_ok_target -> {'id'};
-  
-  my $dir_log_ok = &Common_system::dir_log($flow_id, $task_id, $ok_target_id);
-  
-  unless(-d $dir_log_ok){
-   mkdir($dir_log_ok, 0755)
-  }
-  
-  if($< == 0){
-   chown(48, 48, $dir_log_ok);
-  }
- }
- if(exists($ref_ng_target -> {'id'}) && ($ref_ng_target -> {'id'} !~ /^start_/)){
-  $ng_target_id = $ref_ng_target -> {'id'};
-  
-  my $dir_log_ng = &Common_system::dir_log($flow_id, $task_id, $ng_target_id);
-  
-  unless(-d $dir_log_ng){
-   mkdir($dir_log_ng, 0755)
-  }
-  
-  if($< == 0){
-   chown(48, 48, $dir_log_ng);
-  }
+ my $exists_flowchart_data = 1;
+ if((length($ref_file_names -> [0]) == 0) && (length($ref_file_names -> [1]) == 0) && (length($ref_file_names -> [2]) == 0)){
+  $exists_flowchart_data = 0;
  }
  
- # ログを取得する。
- my $flag_all_ng = 1;
- my $flag_all_ok = 1;
- while(my ($node, $node_status) = each(%$ref_node_status)){
-  for(my $sjis = 0; $sjis <= 1; $sjis ++){
-   my $sjis_file_name = '';
-   if($sjis == 1){
-    $sjis_file_name = '_sjis';
-   }
-   
-   my $ref_log = &TelnetmanWF_common::access2TelnetmanText($login_id, $session_id, 'text_get_log.cgi', {'node' => $node, 'sjis' => $sjis});
-   
-   my $result = $ref_log -> {'result'};
-   
-   unless($result == 1){
-    my $reason = $ref_log -> {'reason'};
-    
-    my $file_error_log = $dir_old_log . '/error_' . $node . $sjis_file_name . '.log';
-    open(LOG, '>', $file_error_log);
-    print LOG $reason;
-    close(LOG);
-    
-    if($< == 0){
-     chown(48, 48, $file_error_log);
-    }
-    
-    next;
-   }
-   
-   my $log = $ref_log -> {'log'};
-   
-   # 過去ログとして保存する。
-   if($node_status == 4){
-    $flag_all_ng = 0;
-    
-    my $file_ok_log = $dir_old_log . '/ok_' . $node . $sjis_file_name . '.log';
-    open(LOG, '>', $file_ok_log);
-    print LOG $log;
-    close(LOG);
-    
-    if($< == 0){
-     chown(48, 48, $file_ok_log);
-    }
-   }
-   elsif($node_status == 5){
-    $flag_all_ok = 0;
-    
-    my $file_ng_log = $dir_old_log . '/ng_' . $node . $sjis_file_name . '.log';
-    open(LOG, '>', $file_ng_log);
-    print LOG $log;
-    close(LOG);
-    
-    if($< == 0){
-     chown(48, 48, $file_ng_log);
-    }
-   }
-   elsif($node_status == 6){
-    $flag_all_ok = 0;
-    
-    my $file_ng_log = $dir_old_log . '/ng_force_continue_' . $node . $sjis_file_name . '.log';
-    open(LOG, '>', $file_ng_log);
-    print LOG $log;
-    close(LOG);
-    
-    if($< == 0){
-     chown(48, 48, $file_ng_log);
-    }
-   }
-   elsif($node_status == 8){
-    $flag_all_ok = 0;
-    
-    my $file_error_log = $dir_old_log . '/error_' . $node . $sjis_file_name . '.log';
-    open(LOG, '>', $file_error_log);
-    print LOG $log;
-    close(LOG);
-    
-    if($< == 0){
-     chown(48, 48, $file_error_log);
-    }
-   }
-  
-   # diff ログを取得する。
-   my $ref_diff_log = &TelnetmanWF_common::access2TelnetmanText($login_id, $session_id, 'text_get_diff.cgi', {'node' => $node, 'sjis' => $sjis});
-   
-   if($ref_diff_log -> {'result'} == 1){
-    my $diff_log = $ref_diff_log -> {'log'};
-    
-    my $file_diff_log = $dir_old_log . '/diff_' . $node . $sjis_file_name . '.log';
-    open(LOG, '>', $file_diff_log);
-    print LOG $diff_log;
-    close(LOG);
-    
-    if($< == 0){
-     chown(48, 48, $file_diff_log);
-    }
-   }
-  }
-  
-  
-  # パラメーターシートを結合する場合
-  if($bond == 1){
-   my $ref_additional_parameter_sheet = &TelnetmanWF_common::access2TelnetmanText($login_id, $session_id, 'text_get_additional_parameter_sheet.cgi', {'node' => $node});
-   
-   my $result = $ref_additional_parameter_sheet -> {'result'};
-   
-   if($result == 1){
-    my $json_additional_parameter_sheet = $ref_additional_parameter_sheet -> {'json_additional_parameter_sheet'};
-    $json_existing_parameter_sheet = &TelnetmanWF_common::bond_parameter_sheet($json_existing_parameter_sheet, $json_additional_parameter_sheet);
-   }
-  }
- }
- 
- 
- # 任意ログを取得する。
- for(my $sjis = 0; $sjis <= 1; $sjis ++){
-  my $sjis_file_name = '';
-  if($sjis == 1){
-   $sjis_file_name = '_sjis';
-  }
-  
-  my $ref_optional_log = &TelnetmanWF_common::access2TelnetmanText($login_id, $session_id, 'text_get_optional_log.cgi', {'sjis' => $sjis});
-  
-  if($ref_optional_log -> {'result'} == 1){
-   my $optional_log = $ref_optional_log -> {'log'};
-   
-   my $file_optional_log = $dir_old_log . '/optional' . $sjis_file_name . '.log';
-   open(LOG, '>', $file_optional_log);
-   print LOG $optional_log;
-   close(LOG);
-   
-   if($< == 0){
-    chown(48, 48, $file_optional_log);
-   }
-  }
- }
- 
- 
- # ログをzip 圧縮する。
- &TelnetmanWF_common::make_zip_log($flow_id, $task_id, $work_id, $time);
- 
- # 次の行き先にパラメーターシートを渡す。
- if(($flag_all_ng == 1) || (($use_parameter_sheet == 1) && ($flag_all_ok == 0))){
-  if(length($ng_target_id) > 0){
-   $this_process_ng_target_id = $ng_target_id;
-   my $file_parameter_sheet_ng = &Common_system::file_parameter_sheet($flow_id, $task_id, $ng_target_id);
-   &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet_ng, $json_existing_parameter_sheet);
-  }
- }
- elsif($flag_all_ok == 1){
-  if(length($ok_target_id) > 0){
-   $this_process_ok_target_id = $ok_target_id;
-   my $file_parameter_sheet_ok = &Common_system::file_parameter_sheet($flow_id, $task_id, $ok_target_id);
-   &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet_ok, $json_existing_parameter_sheet);
-  }
- }
- else{
-  # パラメーターシートをOK, NG に分割する。
-  my ($ref_node_list, $ref_interface_list, $ref_node_info, $ref_interface_info, $error_message) = &TelnetmanWF_common::parse_parameter_sheet($json_existing_parameter_sheet);
-  my @node_list_ok = ();
-  my @node_list_ng = ();
-  
-  foreach my $node (@$ref_node_list){
-   if(!exists($ref_node_status -> {$node}) || ($ref_node_status -> {$node} == 4)){
-    push(@node_list_ok, $node);
-   }
-   elsif(($ref_node_status -> {$node} == 5) || ($ref_node_status -> {$node} == 6) || ($ref_node_status -> {$node} == 8)){
-    push(@node_list_ng, $node);
-   }
-  }
-  
-  my ($json_parameter_sheet_ok, $json_parameter_sheet_ng) = &TelnetmanWF_common::extract_parameter_sheet($json_existing_parameter_sheet, \@node_list_ok, \@node_list_ng);
-  
-  if((length($ok_target_id) > 0) && (scalar(@node_list_ok) > 0)){
-   $this_process_ok_target_id = $ok_target_id;
-   my $file_parameter_sheet_ok = &Common_system::file_parameter_sheet($flow_id, $task_id, $ok_target_id);
-   &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet_ok, $json_parameter_sheet_ok);
-  }
-  
-  if((length($ng_target_id) > 0) && (scalar(@node_list_ng) > 0)){
-   $this_process_ng_target_id = $ng_target_id;
-   my $file_parameter_sheet_ng = &Common_system::file_parameter_sheet($flow_id, $task_id, $ng_target_id);
-   &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet_ng, $json_parameter_sheet_ng);
-  }
- }
- 
- # Telnetman からログアウト
- my $ref_logout_result = &TelnetmanWF_common::access2Telnetman($login_id, $session_id, 'logout.cgi');
- 
- # T_LastStatus を更新
- my $update_time = &TelnetmanWF_common::update_status($access2db, $flow_id, $task_id, $work_id, 2, $login_id, $session_id, [$this_process_ok_target_id, $this_process_ng_target_id]);
- 
- return($update_time, $this_process_ok_target_id, $this_process_ng_target_id);
-}
-
-
-
-#
-# ログをzip 圧縮する。
-#
-sub make_zip_log {
- my $flow_id = $_[0];
- my $task_id = $_[1];
- my $work_id = $_[2];
- my $time    = $_[3];
- 
- my $dir_old_log = &Common_system::dir_old_log($flow_id, $task_id, $work_id, $time);
- 
- opendir(DOLOG, $dir_old_log);
- my @log_files = readdir(DOLOG);
- closedir(DOLOG);
- 
- my @ok_log_name_list = ();
- my @ng_log_name_list = ();
- my @error_log_name_list = ();
- my @diff_log_name_list = ();
- my @optional_log_name_list = ();
- foreach my $log_name (@log_files){
-  if($log_name =~ /^ok_/){
-   push(@ok_log_name_list, $log_name);
-  }
-  elsif($log_name =~ /^ng_/){
-   push(@ng_log_name_list, $log_name);
-  }
-  elsif($log_name =~ /^error_/){
-   push(@error_log_name_list, $log_name);
-  }
-  elsif($log_name =~ /^diff_/){
-   push(@diff_log_name_list, $log_name);
-  }
-  elsif($log_name =~ /^optional/){
-   push(@optional_log_name_list, $log_name);
-  }
- }
- 
- if(scalar(@ok_log_name_list) > 0){
-  my $file_zip = &Common_system::file_zip_log($flow_id, $task_id, $work_id, $time, 'ok');
-  
-  my $zip = Archive::Zip -> new();
-  
-  foreach my $log_name (@ok_log_name_list){
-   $zip -> addFile($dir_old_log . '/' . $log_name, $log_name);
-  }
-  
-  $zip -> writeToFileNamed($file_zip);
-  
-  if($< == 0){
-   chown(48, 48, $file_zip);
-  }
-  
-  foreach my $log_name (@ok_log_name_list){
-   unlink($dir_old_log . '/' . $log_name);
-  }
- }
- 
- if(scalar(@ng_log_name_list) > 0){
-  my $file_zip = &Common_system::file_zip_log($flow_id, $task_id, $work_id, $time, 'ng');
-  
-  my $zip = Archive::Zip -> new();
-  
-  foreach my $log_name (@ng_log_name_list){
-   $zip -> addFile($dir_old_log . '/' . $log_name, $log_name);
-  }
-  
-  $zip -> writeToFileNamed($file_zip);
-  
-  if($< == 0){
-   chown(48, 48, $file_zip);
-  }
-  
-  foreach my $log_name (@ng_log_name_list){
-   unlink($dir_old_log . '/' . $log_name);
-  }
- }
- 
- if(scalar(@error_log_name_list) > 0){
-  my $file_zip = &Common_system::file_zip_log($flow_id, $task_id, $work_id, $time, 'error');
-  
-  my $zip = Archive::Zip -> new();
-  
-  foreach my $log_name (@error_log_name_list){
-   $zip -> addFile($dir_old_log . '/' . $log_name, $log_name);
-  }
-  
-  $zip -> writeToFileNamed($file_zip);
-  
-  if($< == 0){
-   chown(48, 48, $file_zip);
-  }
-  
-  foreach my $log_name (@error_log_name_list){
-   unlink($dir_old_log . '/' . $log_name);
-  }
- }
- 
- if(scalar(@diff_log_name_list) > 0){
-  my $file_zip = &Common_system::file_zip_log($flow_id, $task_id, $work_id, $time, 'diff');
-  
-  my $zip = Archive::Zip -> new();
-  
-  foreach my $log_name (@diff_log_name_list){
-   $zip -> addFile($dir_old_log . '/' . $log_name, $log_name);
-  }
-  
-  $zip -> writeToFileNamed($file_zip);
-  
-  if($< == 0){
-   chown(48, 48, $file_zip);
-  }
-  
-  foreach my $log_name (@diff_log_name_list){
-   unlink($dir_old_log . '/' . $log_name);
-  }
- }
- 
- if(scalar(@optional_log_name_list) > 0){
-  my $file_zip = &Common_system::file_zip_log($flow_id, $task_id, $work_id, $time, 'optional');
-  
-  my $zip = Archive::Zip -> new();
-  
-  foreach my $log_name (@optional_log_name_list){
-   $zip -> addFile($dir_old_log . '/' . $log_name, $log_name);
-  }
-  
-  $zip -> writeToFileNamed($file_zip);
-  
-  if($< == 0){
-   chown(48, 48, $file_zip);
-  }
-  
-  foreach my $log_name (@optional_log_name_list){
-   unlink($dir_old_log . '/' . $log_name);
-  }
- }
+ return($exists_flowchart_data);
 }
 
 
@@ -1221,7 +1026,6 @@ sub last_log_list {
   my $error = 0;
   my $diff = 0;
   my $optional = 0;
-  my $individual_parameter_sheet = 0;
   
   foreach my $log_name (@log_files){
    if($log_name =~ /^ok_/i){
@@ -1239,48 +1043,12 @@ sub last_log_list {
    elsif($log_name =~ /^optional/i){
     $optional = 1;
    }
-   elsif($log_name =~ /^Telnetman2_parameter_individual/){
-    $individual_parameter_sheet = 1;
-   }
   }
   
-  return($last_time, $ok, $ng, $error, $diff, $optional, $individual_parameter_sheet);
+  return($last_time, $ok, $ng, $error, $diff, $optional);
  }
  else{
-  return(0,0,0,0,0,0,0);
- }
-}
-
-
-#
-# through 用パラメーターシートを本線に戻す。
-#
-sub return_through_parameter_sheet {
- my $flow_id = $_[0];
- my $task_id = $_[1];
- my $work_id = $_[2];
- 
- my $file_parameter_sheet_through = &Common_system::file_parameter_sheet_through($flow_id, $task_id, $work_id);
- if(-f $file_parameter_sheet_through){
-  my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $work_id);
-  
-  if(-f $file_parameter_sheet){
-   open(PSHEET, '<', $file_parameter_sheet_through);
-   my $json_parameter_sheet_through = <PSHEET>;
-   close(PSHEET);
-   
-   &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet, $json_parameter_sheet_through);
-   
-   unlink($file_parameter_sheet_through);
-  }
-  else{
-   &File::Copy::move($file_parameter_sheet_through, $file_parameter_sheet);
-  }
-  
-  return(1);
- }
- else{
-  return(0);
+  return(0,0,0,0,0,0);
  }
 }
 
@@ -1315,39 +1083,162 @@ sub make_flow_id {
 
 
 #
-# 個別パラメーターシートを使ったかどうか。
+# Telnetman へのログインID, Password を記録する。
 #
-sub check_individual_parameter_sheet {
+sub set_telnetman_login {
+ my $access2db          = $_[0];
+ my $flow_id            = $_[1];
+ my $task_id            = $_[2];
+ my $telnetman_user     = $_[3];
+ my $telnetman_password = $_[4];
+ my $just_telnetman_user_password = $_[5];
+ 
+ my $time = time;
+ my $encoded_telnetman_password = &TelnetmanWF_common::encode_password($telnetman_password);
+ 
+ my $select_column = 'count(*)';
+ my $table     = 'T_StartList';
+ my $condition = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "'";
+ $access2db -> set_select($select_column, $table, $condition);
+ my $count = $access2db -> select_col1;
+ 
+ if($count > 0){
+  my @set = (
+       "vcTelnetmanUser = '" . $telnetman_user . "'",
+   "vcTelnetmanPassword = '" . $encoded_telnetman_password . "'"
+  );
+  
+  unless(defined($just_telnetman_user_password)){
+   push(@set, 'iUpdateTime = ' . $time);
+  }
+  
+  $access2db -> set_update(\@set, $table, $condition);
+  $access2db -> update_exe;
+ }
+ else{
+  my $insert_column = 'vcFlowId,vcTaskId,vcTelnetmanUser,vcTelnetmanPassword,iCreateTime,iUpdateTime';
+  my @values = ("('" . $flow_id . "','" . $task_id . "','" . $telnetman_user . "','" . $encoded_telnetman_password . "'," . $time . "," . $time .")");
+  $access2db -> set_insert($insert_column, \@values, $table);
+  $access2db -> insert_exe;
+ }
+ 
+ return($time); 
+}
+
+#
+# Telnetman へのログインID, Password を取り出す。
+#
+sub get_telnetman_login {
  my $access2db = $_[0];
  my $flow_id   = $_[1];
- my $work_id   = $_[2];
+ my $task_id   = $_[2];
  
- my $select_column = 'iUseParameterSheet';
- my $table         = 'T_Work';
- my $condition     = "where vcFlowId = '" . $flow_id . "' and vcWorkId = '" . $work_id . "'";
+ my $telnetman_user = '';
+ my $telnetman_password = '';
+ 
+ my $select_column = 'vcTelnetmanUser,vcTelnetmanPassword';
+ my $table     = 'T_StartList';
+ my $condition = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "'";
  $access2db -> set_select($select_column, $table, $condition);
- my $use_parameter_sheet = $access2db -> select_col1;
-
- $use_parameter_sheet += 0;
-
- return($use_parameter_sheet);
+ my $ref_telentman_login = $access2db -> select_cols;
+ 
+ if(scalar(@$ref_telentman_login) > 0){
+  $telnetman_user                = $ref_telentman_login -> [0];
+  my $encoded_telnetman_password = $ref_telentman_login -> [1];
+  
+  $telnetman_password = &TelnetmanWF_common::decode_password($encoded_telnetman_password);
+ }
+ 
+ return($telnetman_user, $telnetman_password);
 }
 
 
+
 #
-# 開発用
+# パラメーターシートが存在するかどうか確認する。
 #
-sub debug_log {
+sub exists_parameter_sheet {
  my $flow_id = $_[0];
  my $task_id = $_[1];
- my $log = $_[2];
+ my $box_id  = $_[2];
  
- my $dir_task_log = &Common_system::dir_task_log($flow_id, $task_id);
- my $file_log = $dir_task_log . '/debug.log';
+ my $exists_parameter_sheet = 0;
+ my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $box_id);
+ my $update_time = 0;
  
- open(DLOG, '>>', $file_log);
- print DLOG $log . "\n";
- close(DLOG);
+ if(-f $file_parameter_sheet){
+  $exists_parameter_sheet = 1;
+  $update_time = (stat($file_parameter_sheet))[9];
+  $update_time += 0;
+ }
+ 
+ return($exists_parameter_sheet, $file_parameter_sheet, $update_time);
+}
+
+
+
+#
+# 実行履歴を残す。
+#
+sub write_history {
+ my $access2db     = $_[0];
+ my $flow_id       = $_[1];
+ my $task_id       = $_[2];
+ my $box_id        = $_[3];
+ my $ref_node_list = $_[4];
+ my $time          = $_[5];
+ my $status        = $_[6];
+ my $error_message = $_[7];
+ 
+ my ($date) = &Common_sub::YYYYMMDDhhmmss($time, 'YYYY/MM/DD hh:mm:ss');
+ my $title = 'Start';
+ 
+ if(($box_id =~ /^work_/) || ($box_id =~ /^case_/)){
+  my $select_column = '';
+  my $table = '';
+  my $condition = "where vcFlowId = '" . $flow_id . "'";
+  
+  if($box_id =~ /^work_/){
+   $select_column = 'vcWorkTitle';
+   $table = 'T_Work';
+   $condition .= " and vcWorkId = '" . $box_id . "'";
+  }
+  elsif($box_id =~ /^case_/){
+   $select_column = 'vcCaseTitle';
+   $table = 'T_Case';
+   $condition .= " and vcCaseId = '" . $box_id . "'";
+  }
+  
+  $access2db -> set_select($select_column, $table, $condition);
+  $title = $access2db -> select_col1;
+ }
+ 
+ my $status_string = ' Done';
+ if($status == -1){
+  $status_string = 'Faile';
+ }
+ 
+ my $csv_node_list = '';
+ if(defined($csv_node_list)){
+  $csv_node_list = ' ' . join(',', @$ref_node_list);
+ }
+ 
+ if(defined($error_message) && (length($error_message) > 0)){
+  $error_message =~ s/\n//g;
+  $error_message = ' ' . $error_message;
+ }
+ else{
+  $error_message = '';
+ }
+ 
+ my $file_history_log = &Common_system::file_history_log($flow_id, $task_id);
+ &CORE::open(my $fh, '>>', $file_history_log);
+ print $fh $date . ' ' . $status_string . ' : [' . $title . ']' . $csv_node_list . $error_message . "\n";
+ &CORE::close($fh);
+ 
+ if($< == 0){
+  chown(48, 48, $file_history_log);
+ }
 }
 
 1;

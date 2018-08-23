@@ -2,6 +2,7 @@
 # 説明   : box をinactive にする。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/14
+# 更新   : 2018/06/29 別のBox でこのBox がvcAutoExecBoxId に指定されている場合は自動実行を無効にする。
 
 use strict;
 use warnings;
@@ -211,6 +212,29 @@ elsif(defined($inactive_box_id) && ($inactive_box_id =~ /^terminal_/)){
  $access2db -> set_update(\@set, $table, $condition);
  my $count = $access2db -> update_exe;
 }
+
+
+
+#
+# inactive にしたbox を自動実行にしていた場合は解除する。
+#
+@set = ("vcAutoExecBoxId = ''");
+$table = 'T_Work';
+$condition = "where vcFlowId = '" . $flow_id . "' and vcAutoExecBoxId = '" . $inactive_box_id . "'";
+$access2db -> set_update(\@set, $table, $condition);
+$count = $access2db -> update_exe;
+
+$table = 'T_Case';
+$access2db -> set_update(\@set, $table, $condition);
+$count = $access2db -> update_exe;
+
+$table = 'T_Terminal';
+$access2db -> set_update(\@set, $table, $condition);
+$count = $access2db -> update_exe;
+
+$table = 'T_Flow';
+$access2db -> set_update(\@set, $table, $condition);
+$count = $access2db -> update_exe;
 
 
 

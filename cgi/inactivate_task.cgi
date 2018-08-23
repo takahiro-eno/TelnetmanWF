@@ -2,6 +2,7 @@
 # 説明   : task を非アクティブにする。
 # 作成者 : 江野高広
 # 作成日 : 2015/08/31
+# 更新   : 2018/08/21 実行中のタスクがあるかの確認を追加。
 
 use strict;
 use warnings;
@@ -45,6 +46,21 @@ if($ref_auth -> {'result'} == 0){
 
 my $flow_id = $ref_auth -> {'flow_id'};
 my $task_id = $ref_auth -> {'task_id'};
+
+
+
+#
+# 実行中のタスクであれば非アクティブにさせない。
+#
+my $exist_running_work = &TelnetmanWF_common::exist_running_work($access2db, $flow_id, $task_id);
+
+if($exist_running_work == 1){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"result":0,"reason":"実行中のタスクです。"}';
+ 
+ $access2db -> close;
+ exit(0);
+}
 
 
 

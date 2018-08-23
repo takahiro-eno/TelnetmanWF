@@ -2,18 +2,21 @@
 # 説明   : task を開始する。
 # 作成者 : 江野高広
 # 作成日 : 2015/05/18
+# 更新   : 2018/08/09  自動実行に対応。
 
 use strict;
 use warnings;
 
 use CGI;
 use JSON;
+use Cache::Memcached;
 
 use lib '/usr/local/TelnetmanWF/lib';
 use Common_system;
 use Common_sub;
 use Access2DB;
 use TelnetmanWF_common;
+use Exec_box;
 
 my $cgi = new CGI;
 
@@ -44,10 +47,31 @@ if($ref_auth -> {'result'} == 0){
 
 my $flow_id = $ref_auth -> {'flow_id'};
 my $task_id = $ref_auth -> {'task_id'};
+my $box_id  = $cgi -> param('box_id');
 
 
 
-my $box_id = $cgi -> param('box_id');
+#
+# Telnetman ログインID, Password を受け取る。
+#
+my $telnetman_user     = $cgi -> param('telnetman_user');
+my $telnetman_password = $cgi -> param('telnetman_password');
+
+unless(defined($telnetman_user) && (length($telnetman_user) > 0)){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"result":0,"reason":"Telnetman ログインID がありません。"}';
+ 
+ $access2db -> close;
+ exit(0);
+}
+
+unless(defined($telnetman_password) && (length($telnetman_password) > 0)){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"result":0,"reason":"Telnetman ログインPassword がありません。"}';
+ 
+ $access2db -> close;
+ exit(0);
+}
 
 
 
@@ -66,6 +90,39 @@ unless(defined($json_parameter_sheet) && (length($json_parameter_sheet) > 0)){
 
 
 
+#
+# 排他制御
+#
+my $exist_running_work = &TelnetmanWF_common::exist_running_work($access2db, $flow_id, $task_id); 
+if(defined($exist_running_work) && ($exist_running_work == 1)){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"result":0,"reason":"現在実行中のタスクです。"}';
+ 
+ $access2db -> close;
+ exit(0);
+}
+
+my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+my $check_status = $memcached -> get('check_status');
+
+if(defined($check_status) && ($check_status == 1)){
+ print "Content-type: text/plain; charset=UTF-8\n\n";
+ print '{"result":0,"reason":"現在実行中のタスクです。"}';
+ 
+ $access2db -> close;
+ exit(0);
+}
+
+
+
+#
+# Telnetman へのログインID, Password を記録する。ログを残す。
+#
+my $update_time = &TelnetmanWF_common::set_telnetman_login($access2db, $flow_id, $task_id, $telnetman_user, $telnetman_password);
+my $ref_node_list = (&TelnetmanWF_common::parse_parameter_sheet($json_parameter_sheet))[0];
+&TelnetmanWF_common::write_history($access2db, $flow_id, $task_id, 'start_circle', $ref_node_list, $update_time, 2);
+
+
 
 #
 # 行き先を確認する。
@@ -78,17 +135,6 @@ my $json_target = $access2db -> select_col1;
 
 
 
-#
-# ステータスの更新
-#
-my $update_time = &TelnetmanWF_common::update_status($access2db, $flow_id, $task_id, $box_id, 2);
-
-
-
-$access2db -> close;
-
-
-
 my $ref_target = &JSON::from_json($json_target);
 my $target_id = "";
 
@@ -96,14 +142,14 @@ if(exists($ref_target -> {'id'})){
  $target_id = $ref_target -> {'id'};
 }
 else{
+ $access2db -> close;
+ 
  my %results = (
-  'result' => 1,
-  'status' => 2,
+  'result'  => 0,
   'flow_id' => $flow_id,
   'task_id' => $task_id,
   'box_id'  => $box_id,
-  'update_time' => $update_time,
-  'target_list' => []
+  'reason'  => '次の行き先がありません。'
  );
  
  my $json_results = &JSON::to_json(\%results);
@@ -128,19 +174,26 @@ unless(-d $dir_log){
 
 my $push_result = &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet, $json_parameter_sheet);
 
+# 次のBox の自動実行。
+my ($auto_exec_box_id, $status, $error_message) = &Exec_box::auto_exec($access2db, $flow_id, $task_id, $target_id);
 
+my ($ref_empty_box_id_list, $ref_fill_box_id_list) = &TelnetmanWF_common::make_box_id_list($access2db, $flow_id, $task_id);
+
+$access2db -> close;
 
 #
 # 結果をまとめる。
 #
 my %results = (
  'result' => 1,
- 'status' => 2,
  'flow_id' => $flow_id,
  'task_id' => $task_id,
  'box_id'  => $box_id,
- 'update_time' => $update_time,
- 'target_list' => [$target_id]
+ 'status'  => $status,
+ 'error_message'     => $error_message,
+ 'auto_exec_box_id'  => $auto_exec_box_id,
+ 'empty_box_id_list' => $ref_empty_box_id_list,
+ 'fill_box_id_list'  => $ref_fill_box_id_list
 );
 
 my $json_results = &JSON::to_json(\%results);

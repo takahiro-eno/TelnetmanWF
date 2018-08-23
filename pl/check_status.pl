@@ -4,18 +4,21 @@
 # 作成日 : 2015/05/21
 # 更新 2015/12/08 : 個別パラメーターシートを使えるように。
 #      2016/07/05 : ステータス99 に変更するタイミングをTelnetman にアクセスする前に移動。
+# 更新   : 2018/08/09  自動実行に対応。
 
 use strict;
 use warnings;
 
 use JSON;
 use Getopt::Long;
+use Cache::Memcached;
 
 use lib '/usr/local/TelnetmanWF/lib';
 use Common_system;
 use Common_sub;
 use Access2DB;
-use TelnetmanWF_common;
+#use TelnetmanWF_common;
+use Exec_box;
 
 
 
@@ -46,81 +49,126 @@ my $access2db                                   = Access2DB -> open(@DB_connect_
 #
 # 実行中のタスクを取り出す。
 #
-my $select_column = 'vcFlowId,vcTaskId,vcBoxId,vcLoginId,vcSessionId';
-my $table         = 'T_LastStatus';
+my $select_column = 'vcFlowId,vcTaskId,vcWorkId,vcLoginId,vcSessionId';
+my $table         = 'T_WorkList';
 my $condition     = 'where iStatus = 1';
 $access2db -> set_select($select_column, $table, $condition);
 my $ref_last_status = $access2db -> select_array_cols;
 
 
 
+# 終了処理中を表すステータスコード99 に変更。
+my @set = ('iStatus = 99');
+$access2db -> set_update(\@set, $table, $condition);
+$access2db -> update_exe;
+
+
+
 #
 # 終了リスト
 #
-my @finished_list = ();
+my @ok_list = ();
 
 
 
+#
+# Telnetman にアクセスして終了しているか確認。していなければstatus を1 に戻す。
+#
 foreach my $ref_row (@$ref_last_status){
- my ($flow_id, $task_id, $box_id, $login_id, $session_id) = @$ref_row;
+ my ($flow_id, $task_id, $work_id, $login_id, $session_id) = @$ref_row;
  
- if($box_id =~ /^work_/){
-  # 終了処理中を表すステータスコード99 に変更。
-  &main::change_status($access2db, 99, $flow_id, $task_id, $box_id);
-  
-  my $ref_check_status = &TelnetmanWF_common::access2Telnetman($login_id, $session_id, 'check_status.cgi', {'require_node_list' => 0});
-  
+ my $ref_check_status = &TelnetmanWF_common::access2Telnetman($login_id, $session_id, 'check_status.cgi', {'require_node_list' => 0});
+ 
+ if(defined($ref_check_status)){
   my $login           = $ref_check_status -> {'login'};
   my $session         = $ref_check_status -> {'session'};
-  #my $session_id      = $ref_check_status -> {'session_id'};
   my $session_status  = $ref_check_status -> {'session_status'};
-  #my $debug           = $ref_check_status -> {'debug'};
-  #my $auto_pause      = $ref_check_status -> {'auto_pause'};
   my $ref_node_status = $ref_check_status -> {'node_status'};
   
   if(($login == 1) && ($session == 1)){
    if($session_status == 4){
-    # 個別パラメーターシートを使ったかどうか。
-    my $use_parameter_sheet = &TelnetmanWF_common::check_individual_parameter_sheet($access2db, $flow_id, $box_id);
-    
-    my @data = ($flow_id, $task_id, $box_id, $login_id, $session_id, $ref_node_status, $use_parameter_sheet);
-    push(@finished_list, \@data);
+    push(@ok_list, [$flow_id, $task_id, $work_id, $login_id, $session_id, $ref_node_status]);
    }
    else{
-    &main::change_status($access2db, 1, $flow_id, $task_id, $box_id);
+    &main::update_status1($access2db, $flow_id, $task_id, $work_id);
    }
   }
   else{
-   &main::change_status($access2db, 1, $flow_id, $task_id, $box_id);
+   my $update_time = &TelnetmanWF_common::update_work_status($access2db, $flow_id, $task_id, $work_id, -1, '実行後の終了確認でTelnetman2 にログインできませんでした。');
+   &Exec_box::delete_queue($access2db, $flow_id, $task_id);
+   
+   # exec のパラメーターシートを過去ログ置き場に移動。
+   my $time = &Exec_box::move_exec_parameter_sheet($flow_id, $task_id, $work_id);
   }
+ }
+ else{# Telnetman2 に疎通できなかった場合は後でやり直すためにstatus を戻す。
+  &main::update_status1($access2db, $flow_id, $task_id, $work_id);
  }
 }
 
 $access2db -> close;
 
+if(scalar(@ok_list) == 0){
+ exit(0);
+}
+
+
 
 my $count = 0;
-foreach my $ref_data (@finished_list){
+foreach my $ref_data (@ok_list){
  my $pid = fork;
  
  if($pid == 0){
-  my $flow_id             = $ref_data -> [0];
-  my $task_id             = $ref_data -> [1];
-  my $box_id              = $ref_data -> [2];
-  my $login_id            = $ref_data -> [3];
-  my $session_id          = $ref_data -> [4];
-  my $ref_node_status     = $ref_data -> [5];
-  my $use_parameter_sheet = $ref_data -> [6];
+  my $flow_id         = $ref_data -> [0];
+  my $task_id         = $ref_data -> [1];
+  my $work_id         = $ref_data -> [2];
+  my $login_id        = $ref_data -> [3];
+  my $session_id      = $ref_data -> [4];
+  my $ref_node_status = $ref_data -> [5];
+  
+  # T_WorkList のiStatus 更新中にcheck_last_status.cgi による確認を防ぐためにフラグを立てる。
+  my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+  my $set_memcached = $memcached -> set('check_status', 1);
+  my $force_stop = $memcached -> get('force_stop');
+  
+  unless(defined($force_stop)){
+   $force_stop = 0;
+  }
   
   my $access2db = Access2DB -> open(@DB_connect_parameter_list);  
-  my ($time, $ok_target_id, $ng_target_id) = &TelnetmanWF_common::end_of_telnet($access2db, $flow_id, $task_id, $box_id, $login_id, $session_id, $ref_node_status, $use_parameter_sheet);
+  my ($ok_target_id, $ng_target_id) = &Exec_box::end_of_telnet($access2db, $flow_id, $task_id, $work_id, $login_id, $session_id, $ref_node_status);
+  my $status = 2;
+  
+  if($force_stop == 0){
+   # OK, NG 分岐先の自動実行
+   foreach my $target_id ($ok_target_id, $ng_target_id){
+    my ($auto_exec_box_id, $_status, $error_message) = &Exec_box::auto_exec($access2db, $flow_id, $task_id, $target_id);
+    $status = $_status;
+    
+    if($status == -1){
+     last;
+    }
+   }
+   
+   # queue に入っているwork があれば実行する。
+   if($status != -1){
+    my $next_work_id = &Exec_box::shift_queue($access2db, $flow_id, $task_id);
+    my ($next_status, $next_error_message) = &Exec_box::exec_work($access2db, $flow_id, $task_id, $next_work_id);
+   }
+   else{
+    &Exec_box::delete_queue($access2db, $flow_id, $task_id);
+   }
+  }
+  else{
+   #強制終了
+   &Exec_box::delete_queue($access2db, $flow_id, $task_id);
+   $memcached -> delete('force_stop');
+  }
+  
   $access2db -> close;
   
-  #
-  # through ノードのパラメーターシートがあれば本線用のパラメーターシートに戻す。
-  #
-  my $exists_parameter_sheet = &TelnetmanWF_common::return_through_parameter_sheet($flow_id, $task_id, $box_id);
-   
+  $memcached -> delete('check_status');
+  
   exit(0);
  }
  
@@ -132,16 +180,15 @@ for(my $i = 0; $i < $count; $i ++){
 }
 
 
-sub change_status {
+sub update_status1 {
  my $access2db = $_[0];
- my $status    = $_[1];
- my $flow_id   = $_[2];
- my $task_id   = $_[3];
- my $box_id    = $_[4];
+ my $flow_id   = $_[1];
+ my $task_id   = $_[2];
+ my $work_id   = $_[3];
  
- my @set = ('iStatus = ' . $status);
- my $table = 'T_LastStatus';
- my $condition = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcBoxId = '" . $box_id . "'";
+ my @set = ('iStatus = 1');
+ my $table = 'T_WorkList';
+ my $condition = "where vcFlowId = '" . $flow_id . "' and vcTaskId = '" . $task_id . "' and vcWorkId = '" . $work_id . "'";
  $access2db -> set_update(\@set, $table, $condition);
  $access2db -> update_exe;
 }

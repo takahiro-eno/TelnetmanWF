@@ -4,7 +4,8 @@
 // 更新   : 2015/12/24 syslog 確認のJSON を取り込めるように。
 // 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
 // 更新   : 2018/01/05 enable password 一括変更機能。
-// 更新   : 2018/03/16 個別パラメーターシートを非表示に。機能毎削除は当たりが広いので非表示に。
+// 更新   : 2018/03/16 個別パラメーターシートを非表示に。機能ごと削除は当たりが広いので非表示に。
+// 更新   : 2018/08/15 自動実行に対応。個別パラメーターシートを廃止。
 
 var objUpdateFlow = new updateFlow();
 
@@ -44,7 +45,15 @@ function updateFlow (){
   return("p_login_info_" + boxId);
  };
  
- // 選択中のbox のenable password の表示領域のid
+ // 選択中のbox のuser, password, enable password の表示領域のid
+ this.idUser = function(boxId){
+  return("input_user_" + boxId);
+ };
+ 
+ this.idPassword = function(boxId){
+  return("input_password_" + boxId);
+ };
+ 
  this.idEnablePassword = function(boxId){
   return("input_enable_password_" + boxId);
  };
@@ -64,17 +73,6 @@ function updateFlow (){
   return("p_optional_log_" + workId);
  };
  
- 
- // 選択中のwork のパラメーターシートの選択領域のid
- this.idInputParameterSheet = function (workId, value){
-  if((value !== null) && (value !== undefined)){
-   return("input_parametersheet_" + workId + "_" + value);
-  }
-  else{
-   return("input_parametersheet_" + workId);
-  }
- };
- 
  // 選択中のwork のパラメーターシートの結合の選択領域のid
  this.idInputOkLog = function (workId, value){
   if((value !== null) && (value !== undefined)){
@@ -88,6 +86,16 @@ function updateFlow (){
  // 選択中のcase の条件表示欄のid
  this.idTdParameterConditions = function (caseId){
   return("parameter_conditions_area");
+ };
+ 
+ // 1台ずつ実行のcheckbox のid
+ this.idExecOnlyOne = function(boxId){
+  return("exec_only_one_" + boxId);
+ };
+ 
+ // 自動実行select のid
+ this.idAutoExec = function(boxId){
+  return("auto_exec_" + boxId);
  };
  
  // 選択中のwork のflowchart data のファイル名。
@@ -214,9 +222,12 @@ function updateFlow (){
        if(result === 1){
         var flowId = hashResult["flow_id"];
         var workId = hashResult["work_id"];
+        var title  = hashResult["title"];
         
         objTelnetmanWorkFlow.addNewWorkBox(workId);
         objUpdateFlow.getBoxData(workId);
+        objControleStorageS.setBoxTitle(workId, title);
+        objControleStorageS.pushBoxIdList("work", workId);
        }
        else{
         objTelnetmanWorkFlow.addNewWorkBox();
@@ -293,9 +304,12 @@ function updateFlow (){
        if(result === 1){
         var flowId = hashResult["flow_id"];
         var caseId = hashResult["case_id"];
+        var title  = hashResult["title"];
         
         objTelnetmanWorkFlow.addNewCaseBox(caseId);
         objUpdateFlow.getBoxData(caseId);
+        objControleStorageS.setBoxTitle(caseId, title);
+        objControleStorageS.pushBoxIdList("case", caseId);
        }
        else{
         objTelnetmanWorkFlow.addNewCaseBox();
@@ -392,7 +406,7 @@ function updateFlow (){
  // box data を取得、表示する。
  //
  this.getBoxData = function (boxId){
-  if(boxId.match(/^work_/) || boxId.match(/^case_/) || boxId.match(/^start_/) || boxId.match(/^terminal_/)){
+  if(boxId.match(/^work_/) || boxId.match(/^case_/) || boxId.match(/^start_/) || boxId.match(/^terminal_/) || boxId.match(/^goal_/)){
    if(boxId !== this.selectedBoxId){
     if(objParameterConditions.changes){
      this.updateCaseData(this.selectedBoxId, boxId);
@@ -417,20 +431,12 @@ function updateFlow (){
      else if(boxId.match(/^terminal_/)){
       this.getTerminalData(boxId) ;
      }
+     else if(boxId.match(/^goal_/)){
+      this.getGoalData(boxId) ;
+     }
     }
    }
   }
- };
- 
- 
- 
- //
- // box data table のbottom 座標を取得する。
- //
- this.getBoxDataTableBottom = function (boxId){
-  var rect = document.getElementById(this.idTable(boxId)).getBoundingClientRect();
-  var boxDataTableBottom = window.pageYOffset + rect.top + rect.height;
-  return(boxDataTableBottom);
  };
  
  
@@ -474,13 +480,16 @@ function updateFlow (){
         var workId             = hashResult["work_id"];
         var title              = hashResult["title"];
         var description        = hashResult["description"];
-        var useParameterSheet  = hashResult["use_parameter_sheet"];
+        var execOnlyOne        = hashResult["exec_only_one"];
+        var autoExecBoxId      = hashResult["auto_exec_box_id"];
         var bondParameterSheet = hashResult["bond_parameter_sheet"];
         var updateTime         = hashResult["update_time"];
         var flowchartBefore    = hashResult["flowchart_before"];
         var flowchartMiddle    = hashResult["flowchart_middle"];
         var flowchartAfter     = hashResult["flowchart_after"];
         var loginInfo          = hashResult["login_info"];
+        var user               = hashResult["user"];
+        var password           = hashResult["password"];
         var enablePassword     = hashResult["enable_password"];
         var syslogValues       = hashResult["syslog_values"];
         var diffValues         = hashResult["diff_values"];
@@ -529,7 +538,6 @@ function updateFlow (){
         elInput22.setAttribute("type", "text");
         elInput22.setAttribute("spellcheck", "false");
         elInput22.setAttribute("autocomplete", "off");
-        //elInput22.setAttribute("size", 26);
         elInput22.style.width = "162px";
         elInput22.setAttribute("id", objUpdateFlow.idInputTitle(workId));
         elInput22.setAttribute("value", title);
@@ -546,8 +554,6 @@ function updateFlow (){
         var elTextarea32 = document.createElement("textarea");
         elSpan31.innerHTML = "説明";
         elTextarea32.setAttribute("id", objUpdateFlow.idTextAreaDescription(workId));
-        //elTextarea32.setAttribute("cols", 26);
-        //elTextarea32.setAttribute("rows", 6);
         elTextarea32.style.width = "162px";
         elTextarea32.style.height = "72px";
         elTextarea32.value = description;
@@ -557,6 +563,10 @@ function updateFlow (){
         elTd32.appendChild(elTextarea32);
         elTr3.appendChild(elTd31);
         elTr3.appendChild(elTd32);
+        
+        
+        var elTr11 = objUpdateFlow.makeExecOnlyOneTr(workId, execOnlyOne);
+        var elTr12 = objUpdateFlow.makeAutoExecTr(workId, autoExecBoxId);
         
         
         var elTr4    = document.createElement("tr");
@@ -583,43 +593,6 @@ function updateFlow (){
         elTr4.appendChild(elTd42);
         
         
-        var elTr5    = document.createElement("tr");
-        var elTd51   = document.createElement("td");
-        var elTd52   = document.createElement("td");
-        var elSpan51 = document.createElement("span");
-        var elInput52 = document.createElement("input");
-        var elInput53 = document.createElement("input");
-        elSpan51.innerHTML = "パラメーターシート";
-        elInput52.setAttribute("type", "radio");
-        elInput52.setAttribute("id", objUpdateFlow.idInputParameterSheet(workId, 0));
-        elInput52.setAttribute("name", objUpdateFlow.idInputParameterSheet(workId));
-        elInput52.setAttribute("value", 0);
-        elInput53.setAttribute("type", "radio");
-        elInput53.setAttribute("id", objUpdateFlow.idInputParameterSheet(workId, 1));
-        elInput53.setAttribute("name", objUpdateFlow.idInputParameterSheet(workId));
-        elInput53.setAttribute("value", 1);
-        if(useParameterSheet === 1){
-         elInput53.checked = true;
-        }
-        else{
-         elInput52.checked = true;
-        }
-        var elLabel52 = document.createElement("label");
-        var elLabel53 = document.createElement("label");
-        elLabel52.setAttribute("for", objUpdateFlow.idInputParameterSheet(workId, 0));
-        elLabel53.setAttribute("for", objUpdateFlow.idInputParameterSheet(workId, 1));
-        elLabel52.innerHTML = "デフォルト";
-        elLabel53.innerHTML = "個別";
-        elTd51.appendChild(elSpan51);
-        elTd52.appendChild(elInput52);
-        elTd52.appendChild(elLabel52);
-        elTd52.appendChild(elInput53);
-        elTd52.appendChild(elLabel53);
-        elTr5.appendChild(elTd51);
-        elTr5.appendChild(elTd52);
-        elTr5.style.display = "none";
-        
-        
         var elTr6    = document.createElement("tr");
         var elTd61   = document.createElement("td");
         var elTd62   = document.createElement("td");
@@ -631,19 +604,13 @@ function updateFlow (){
         elDiv62.ondrop     = new Function("event", "objUpdateFlow.onDropLoginInfoData(event)");
         var elPLoginInfo = document.createElement("p");
         elPLoginInfo.setAttribute("id", objUpdateFlow.idLoginInfo(workId));
-        var elSpanPassword = document.createElement("span");
-        elSpanPassword.innerHTML = "enable&nbsp;password&nbsp;:&nbsp;";
-        var elInputPassword = document.createElement("input");
-        elInputPassword.setAttribute("type", "password");
-        elInputPassword.setAttribute("id", objUpdateFlow.idEnablePassword(workId));
-        //elInputPassword.setAttribute("size", 8);
-        elInputPassword.style.width = "50px";
-        elInputPassword.setAttribute("value", enablePassword);
         elDiv62.appendChild(elPLoginInfo);
+        var elUl62 = objUpdateFlow.makeLoginInfo(workId, user, password, enablePassword);
+        
         elTd61.appendChild(elSpan61);
         elTd62.appendChild(elDiv62);
-        elTd62.appendChild(elSpanPassword);
-        elTd62.appendChild(elInputPassword);
+        elTd62.appendChild(elUl62);
+        
         elTr6.appendChild(elTd61);
         elTr6.appendChild(elTd62);
         
@@ -744,10 +711,11 @@ function updateFlow (){
         elTable.appendChild(elTr1);
         elTable.appendChild(elTr2);
         elTable.appendChild(elTr3);
+        elTable.appendChild(elTr11);
+        elTable.appendChild(elTr12);
         elTable.appendChild(elTr4);
-        elTable.appendChild(elTr5);
-        elTable.appendChild(elTr6);
         elTable.appendChild(elTr7);
+        elTable.appendChild(elTr6);
         elTable.appendChild(elTr10);
         elTable.appendChild(elTr8);
         elTable.appendChild(elTr9);
@@ -764,9 +732,6 @@ function updateFlow (){
         objUpdateFlow.addOptionalLogValuesFileName(workId, optionalLogValues);
         
         objTelnetmanWorkFlow.changeStroke(workId);
-        
-        var boxDataTableBottom = objUpdateFlow.getBoxDataTableBottom(workId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
        }
        else{
         var reason = hashResult["reason"];
@@ -786,6 +751,51 @@ function updateFlow (){
  };
  
  
+ 
+ //
+ // user, password, enable password 入力欄を作る。
+ //
+ this.makeLoginInfo = function (boxId, user, password, enablePassword){
+  var elUl62             = document.createElement("ul");
+  elUl62.className       = "normal";
+  var elLiUser           = document.createElement("li");
+  var elLiPassword       = document.createElement("li");
+  var elLiEnablePassword = document.createElement("li");
+  var elSpanUser = document.createElement("span");
+  elSpanUser.innerHTML = "user&nbsp;:";
+  var elSpanPassword = document.createElement("span");
+  elSpanPassword.innerHTML = "password&nbsp;:";
+  var elSpanEnablePassword = document.createElement("span");
+  elSpanEnablePassword.innerHTML = "enable&nbsp;password&nbsp;:";
+  var elInputUser = document.createElement("input");
+  elInputUser.setAttribute("type", "text");
+  elInputUser.setAttribute("id", objUpdateFlow.idUser(boxId));
+  elInputUser.style.width = "100px";
+  elInputUser.setAttribute("value", user);
+  elInputUser.setAttribute("spellcheck", "false");
+  elInputUser.setAttribute("autocomplete", "off");
+  var elInputPassword = document.createElement("input");
+  elInputPassword.setAttribute("type", "password");
+  elInputPassword.setAttribute("id", objUpdateFlow.idPassword(boxId));
+  elInputPassword.style.width = "70px";
+  elInputPassword.setAttribute("value", password);
+  var elInputEnablePassword = document.createElement("input");
+  elInputEnablePassword.setAttribute("type", "password");
+  elInputEnablePassword.setAttribute("id", objUpdateFlow.idEnablePassword(boxId));
+  elInputEnablePassword.style.width = "50px";
+  elInputEnablePassword.setAttribute("value", enablePassword);
+  elLiUser.appendChild(elSpanUser);
+  elLiUser.appendChild(elInputUser);
+  elLiPassword.appendChild(elSpanPassword);
+  elLiPassword.appendChild(elInputPassword);
+  elLiEnablePassword.appendChild(elSpanEnablePassword);
+  elLiEnablePassword.appendChild(elInputEnablePassword);
+  elUl62.appendChild(elLiUser);
+  elUl62.appendChild(elLiPassword);
+  elUl62.appendChild(elLiEnablePassword);
+  
+  return(elUl62);
+ };
  
  //
  // case data を取得、表示する。
@@ -825,6 +835,7 @@ function updateFlow (){
         var caseId              = hashResult["case_id"];
         var title               = hashResult["title"];
         var description         = hashResult["description"];
+        var autoExecBoxId       = hashResult["auto_exec_box_id"];
         var linkTargetList      = hashResult["link_target_list"];
         var linkLabelList       = hashResult["link_label_list"];
         var linkVerticesList    = hashResult["link_vertices_list"];
@@ -874,7 +885,6 @@ function updateFlow (){
         elInput22.setAttribute("type", "text");
         elInput22.setAttribute("spellcheck", "false");
         elInput22.setAttribute("autocomplete", "off");
-        //elInput22.setAttribute("size", 26);
         elInput22.style.width = "162px";
         elInput22.setAttribute("id", objUpdateFlow.idInputTitle(caseId));
         elInput22.setAttribute("value", title);
@@ -891,8 +901,6 @@ function updateFlow (){
         var elTextarea32 = document.createElement("textarea");
         elSpan31.innerHTML = "説明";
         elTextarea32.setAttribute("id", objUpdateFlow.idTextAreaDescription(caseId));
-        //elTextarea32.setAttribute("cols", 26);
-        //elTextarea32.setAttribute("rows", 6);
         elTextarea32.style.width = "162px";
         elTextarea32.style.height = "72px";
         elTextarea32.value = description;
@@ -902,6 +910,9 @@ function updateFlow (){
         elTd32.appendChild(elTextarea32);
         elTr3.appendChild(elTd31);
         elTr3.appendChild(elTd32);
+        
+        
+        var elTr12 = objUpdateFlow.makeAutoExecTr(caseId, autoExecBoxId);
         
         
         var idParameterConditions = objUpdateFlow.idTdParameterConditions(caseId);
@@ -915,6 +926,7 @@ function updateFlow (){
         elTable.appendChild(elTr1);
         elTable.appendChild(elTr2);
         elTable.appendChild(elTr3);
+        elTable.appendChild(elTr12);
         elTable.appendChild(elTr4);
         elTable.appendChild(elTr0);
         
@@ -943,6 +955,128 @@ function updateFlow (){
     }
    });
   }
+ };
+ 
+ 
+ 
+ //
+ // 実行オプションの行を作成。
+ //
+ this.makeExecOnlyOneTr = function(boxId, execOnlyOne){
+  var elTr11    = document.createElement("tr");
+  var elTd111   = document.createElement("td");
+  var elTd112   = document.createElement("td");
+  var elSpan111 = document.createElement("span");
+  elSpan111.innerHTML = "制限";
+  
+  var elInputExecOnlyOne = document.createElement("input");
+  elInputExecOnlyOne.setAttribute("type", "checkbox");
+  elInputExecOnlyOne.setAttribute("value", 1);
+  elInputExecOnlyOne.setAttribute("id", objUpdateFlow.idExecOnlyOne(boxId));
+  if(execOnlyOne === 1){
+   elInputExecOnlyOne.checked = true;
+  }
+  var elLabelExecOnlyOne = document.createElement("label");
+  elLabelExecOnlyOne.innerHTML = "1台のみ";
+  elLabelExecOnlyOne.className = "checkbox2";
+  elLabelExecOnlyOne.setAttribute("for", objUpdateFlow.idExecOnlyOne(boxId));
+  
+  elTd111.appendChild(elSpan111);
+  elTd112.appendChild(elInputExecOnlyOne);
+  elTd112.appendChild(elLabelExecOnlyOne);
+  elTr11.appendChild(elTd111);
+  elTr11.appendChild(elTd112);
+  
+  return(elTr11);
+ };
+ 
+ // 自動実行の行を作成。
+ this.makeAutoExecTr = function(boxId, autoExecBoxId){
+  var elTr12    = document.createElement("tr");
+  var elTd121   = document.createElement("td");
+  var elTd122   = document.createElement("td");
+  var elSpan121 = document.createElement("span");
+  elSpan121.innerHTML = "自動実行";
+  
+  var elSelectAutoExec = document.createElement("select");
+  elSelectAutoExec.setAttribute("id", objUpdateFlow.idAutoExec(boxId)); 
+  elSelectAutoExec.style.width = "120px";
+  var elOptionAutoExecNone = document.createElement("option");
+  elOptionAutoExecNone.value = "";
+  elOptionAutoExecNone.innerHTML = "-";
+  var elOptionAutoExecSelf = document.createElement("option");
+  elOptionAutoExecSelf.value = boxId;
+  elOptionAutoExecSelf.innerHTML = "Self";
+  
+  if(autoExecBoxId === ""){
+   elOptionAutoExecNone.selected = true;
+  }
+  else if(autoExecBoxId === boxId){
+   elOptionAutoExecSelf.selected = true;
+  }
+  
+  elSelectAutoExec.appendChild(elOptionAutoExecNone);
+  
+  if(!(boxId.match(/^goal_/)) && !(boxId.match(/^terminal_/))){
+   elSelectAutoExec.appendChild(elOptionAutoExecSelf);
+  }
+  
+  var boxIdList = objControleStorageS.getBoxIdList("work");
+  var caseIdList = objControleStorageS.getBoxIdList("case");
+  Array.prototype.push.apply(boxIdList, caseIdList);
+  for(var i = 0, j = boxIdList.length; i < j; i ++){
+   var _boxId = boxIdList[i];
+   
+   if(_boxId !== boxId){
+    var boxTitle = objControleStorageS.getBoxTitle(_boxId);
+    
+    if(boxTitle.length > 0){
+     var elOptionAutoExecBox = document.createElement("option");
+     elOptionAutoExecBox.value = _boxId;
+     elOptionAutoExecBox.innerHTML = boxTitle;
+     
+     if(_boxId === autoExecBoxId){
+      elOptionAutoExecBox.selected = true;
+     }
+     
+     elSelectAutoExec.appendChild(elOptionAutoExecBox);
+    }
+   }
+  }
+  
+  elTd121.appendChild(elSpan121);
+  elTd122.appendChild(elSelectAutoExec);
+  elTr12.appendChild(elTd121);
+  elTr12.appendChild(elTd122);
+  
+  return(elTr12);
+ };
+ 
+ // 1台のみのcheck を確認。
+ this.checkExecOnlyOne = function(boxId){
+  var elInputExecOnlyOne = document.getElementById(objUpdateFlow.idExecOnlyOne(boxId));
+  
+  if(elInputExecOnlyOne.checked === true){
+   return(1);
+  }
+  else{
+   return(0);
+  }
+ };
+ 
+ // 自動実行に何が選ばれているか確認する。
+ this.checkAutoExecBoxId = function(boxId){
+  var elSelectAutoExec = document.getElementById(objUpdateFlow.idAutoExec(boxId));
+  var optionList = elSelectAutoExec.childNodes;
+  
+  for(var i = 0, j = optionList.length; i < j; i ++){
+   if(optionList[i].selected === true){
+    var autoExecBoxId = optionList[i].value;
+    return(autoExecBoxId);
+   }
+  }
+  
+  return("");
  };
  
  
@@ -1443,11 +1577,12 @@ function updateFlow (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var flowId      = hashResult["flow_id"];
-        var terminalId  = hashResult["terminal_id"];
-        var title       = hashResult["title"];
-        var description = hashResult["description"];
-        var updateTime  = hashResult["update_time"];
+        var flowId        = hashResult["flow_id"];
+        var terminalId    = hashResult["terminal_id"];
+        var title         = hashResult["title"];
+        var description   = hashResult["description"];
+        var autoExecBoxId = hashResult["auto_exec_box_id"];
+        var updateTime    = hashResult["update_time"];
         
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateFlow.idTable(terminalId));
@@ -1491,7 +1626,6 @@ function updateFlow (){
         var elInput22 = document.createElement("input");
         elSpan21.innerHTML = "タイトル";
         elInput22.setAttribute("type", "text");
-        //elInput22.setAttribute("size", 26);
         elInput22.style.width = "162px";
         elInput22.setAttribute("id", objUpdateFlow.idInputTitle(terminalId));
         elInput22.setAttribute("value", title);
@@ -1510,8 +1644,6 @@ function updateFlow (){
         var elTextarea32 = document.createElement("textarea");
         elSpan31.innerHTML = "説明";
         elTextarea32.setAttribute("id", objUpdateFlow.idTextAreaDescription(terminalId));
-        //elTextarea32.setAttribute("cols", 26);
-        //elTextarea32.setAttribute("rows", 6);
         elTextarea32.style.width = "162px";
         elTextarea32.style.height = "72px";
         elTextarea32.value = description;
@@ -1522,18 +1654,17 @@ function updateFlow (){
         elTr3.appendChild(elTd31);
         elTr3.appendChild(elTd32);
         
+        var elTr12 = objUpdateFlow.makeAutoExecTr(terminalId, autoExecBoxId);
         
         elTable.appendChild(elTr1);
         elTable.appendChild(elTr2);
         elTable.appendChild(elTr3);
+        elTable.appendChild(elTr12);
         elTable.appendChild(elTr0);
         
         document.getElementById(objUpdateFlow.idBoxDataArea).appendChild(elTable);
         
         objTelnetmanWorkFlow.changeStroke(terminalId);
-        
-        var boxDataTableBottom = objUpdateFlow.getBoxDataTableBottom(terminalId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
        }
        else{
         var reason = hashResult["reason"];
@@ -1594,6 +1725,8 @@ function updateFlow (){
         var description = hashResult["description"];
         var updateTime  = hashResult["update_time"];
         var loginInfo   = hashResult["login_info"];
+        var user        = hashResult["user"];
+        var password    = hashResult["password"];
         var enablePassword = hashResult["enable_password"];
         
         var elTable = document.createElement("table");
@@ -1626,25 +1759,6 @@ function updateFlow (){
         elTr1.appendChild(elTd12);
         
         
-        var elTr2     = document.createElement("tr");
-        var elTd21    = document.createElement("td");
-        var elTd22    = document.createElement("td");
-        var elSpan21  = document.createElement("span");
-        var elInput22 = document.createElement("input");
-        elSpan21.innerHTML = "タイトル";
-        elInput22.setAttribute("type", "text");
-        //elInput22.setAttribute("size", 26);
-        elInput22.style.width = "162.px";
-        elInput22.setAttribute("id", objUpdateFlow.idInputTitle(boxId));
-        elInput22.setAttribute("value", title);
-        elInput22.setAttribute("spellcheck", "false");
-        elInput22.setAttribute("autocomplete", "off");
-        elTd21.appendChild(elSpan21);
-        elTd22.appendChild(elInput22);
-        elTr2.appendChild(elTd21);
-        elTr2.appendChild(elTd22);
-        
-        
         var elTr3        = document.createElement("tr");
         var elTd31       = document.createElement("td");
         var elTd32       = document.createElement("td");
@@ -1652,8 +1766,6 @@ function updateFlow (){
         var elTextarea32 = document.createElement("textarea");
         elSpan31.innerHTML = "説明";
         elTextarea32.setAttribute("id", objUpdateFlow.idTextAreaDescription(boxId));
-        //elTextarea32.setAttribute("cols", 26);
-        //elTextarea32.setAttribute("rows", 6);
         elTextarea32.style.width = "162px";
         elTextarea32.style.height = "72px";
         elTextarea32.value = description;
@@ -1676,25 +1788,18 @@ function updateFlow (){
         elDiv62.ondrop     = new Function("event", "objUpdateFlow.onDropLoginInfoData(event)");
         var elPLoginInfo = document.createElement("p");
         elPLoginInfo.setAttribute("id", objUpdateFlow.idLoginInfo(boxId));
-        var elSpanPassword = document.createElement("span");
-        elSpanPassword.innerHTML = "enable&nbsp;password&nbsp;:&nbsp;";
-        var elInputPassword = document.createElement("input");
-        elInputPassword.setAttribute("type", "password");
-        elInputPassword.setAttribute("id", objUpdateFlow.idEnablePassword(boxId));
-        //elInputPassword.setAttribute("size", 8);
-        elInputPassword.style.width = "50px";
-        elInputPassword.setAttribute("value", enablePassword);
         elDiv62.appendChild(elPLoginInfo);
+        var elUl62 = objUpdateFlow.makeLoginInfo(boxId, user, password, enablePassword);
+        
         elTd61.appendChild(elSpan61);
         elTd62.appendChild(elDiv62);
-        elTd62.appendChild(elSpanPassword);
-        elTd62.appendChild(elInputPassword);
+        elTd62.appendChild(elUl62);
+        
         elTr6.appendChild(elTd61);
         elTr6.appendChild(elTd62);
         
         
         elTable.appendChild(elTr1);
-        elTable.appendChild(elTr2);
         elTable.appendChild(elTr3);
         elTable.appendChild(elTr6);
         elTable.appendChild(elTr0);
@@ -1704,9 +1809,88 @@ function updateFlow (){
         objUpdateFlow.addLoginInfoFileName(boxId, loginInfo);
         
         objTelnetmanWorkFlow.changeStroke(boxId);
+       }
+       else{
+        var reason = hashResult["reason"];
+        alert(reason);
+       }
+      }
+      else{
+       alert("CGI Error");
+      }
+     }
+    },
+    error : function (){
+     alert("Server Error");
+    }
+   });
+  }
+ };
+ 
+ 
+ 
+ //
+ // Goal で設定されている自動実行対象を表示する。
+ //
+ this.getGoalData = function (boxId){
+  var flowId = objControleStorageS.getFlowId();
+  
+  if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0)){
+   this.selectedBoxId = boxId;
+   var header = objCommon.makeHttpHeader();
+   
+   $.ajax({
+    headers : {"TelnetmanWF" : header},
+    type : "post",
+    url  : "/cgi-bin/TelnetmanWF/get_goal_data.cgi",
+    data : {
+     "flow_id" : flowId,
+     "box_id"  : boxId
+    },
+    success : function (jsonResult) {
+     
+     if((jsonResult !== null) && (jsonResult !== undefined)){
+      var hashResult = null;
+      
+      try{
+       hashResult = JSON.parse(jsonResult);
+      }
+      catch(error){
+       
+      }
+      
+      if(hashResult !== null){
+       var result = hashResult["result"];
+       
+       if(result === 1){
+        var flowId        = hashResult["flow_id"];
+        var box_id        = hashResult["box_id"];
+        var autoExecBoxId = hashResult["auto_exec_box_id"];
         
-        var boxDataTableBottom = objUpdateFlow.getBoxDataTableBottom(boxId);
-        objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
+        var elTable = document.createElement("table");
+        elTable.setAttribute("id", objUpdateFlow.idTable(boxId));
+        
+        
+        var elTr0 = document.createElement("tr");
+        var elTd0 = document.createElement("td");
+        elTd0.setAttribute("colspan", 2);
+        elTd0.setAttribute("class", "center");
+        var elButton0    = document.createElement("button");
+        elButton0.setAttribute("class", "enable");
+        elButton0.innerHTML = "更新";
+        elButton0.onclick = new Function("objUpdateFlow.updateGoalData('" + boxId + "')");
+        elTd0.appendChild(elButton0);
+        elTr0.appendChild(elTd0);
+        
+        
+        var elTr12 = objUpdateFlow.makeAutoExecTr(boxId, autoExecBoxId);
+        
+        elTable.appendChild(elTr12);
+        elTable.appendChild(elTr0);
+        
+        document.getElementById(objUpdateFlow.idBoxDataArea).appendChild(elTable);
+        
+        objTelnetmanWorkFlow.changeStroke(boxId);
        }
        else{
         var reason = hashResult["reason"];
@@ -1741,13 +1925,13 @@ function updateFlow (){
    
    var workTitle       = document.getElementById(this.idInputTitle(workId)).value;
    var workDescription = document.getElementById(this.idTextAreaDescription(workId)).value;
+   var user            = document.getElementById(this.idUser(workId)).value;
+   var password        = document.getElementById(this.idPassword(workId)).value;
    var enablePassword  = document.getElementById(this.idEnablePassword(workId)).value;
-   var useParameterSheet  = 0;
    var bondParameterSheet = 0;
    
-   if(document.getElementById(this.idInputParameterSheet(workId, 1)).checked === true){
-    useParameterSheet = 1;
-   }
+   var execOnlyOne   = this.checkExecOnlyOne(workId);
+   var autoExecBoxId = this.checkAutoExecBoxId(workId);
    
    if(document.getElementById(this.idInputOkLog(workId, 1)).checked === true){
     bondParameterSheet = 1;
@@ -1763,7 +1947,8 @@ function updateFlow (){
      "work_id" : workId,
      "work_title"       : workTitle ,
      "work_description" : workDescription,
-     "use_parameter_sheet" : useParameterSheet,
+     "exec_only_one"    : execOnlyOne,
+     "auto_exec_box_id" : autoExecBoxId,
      "bond_parameter_sheet" : bondParameterSheet,
      "flowchart_before_file_name" : this.flowchartFileName["before"],
      "flowchart_middle_file_name" : this.flowchartFileName["middle"],
@@ -1773,6 +1958,8 @@ function updateFlow (){
      "flowchart_after_data"  : this.flowchartData["after"],
      "login_info_file_name" : this.loginInfoFileName,
      "login_info_data"      : this.loginInfoData,
+     "user"                 : user,
+     "password"             : password,
      "enable_password"      : enablePassword,
      "syslog_value_file_name" : this.syslogValuesFileName,
      "syslog_value_data"      : this.syslogValuesData,
@@ -1805,6 +1992,8 @@ function updateFlow (){
         
         objTelnetmanWorkFlow.updateTitle(workId, title);
         document.getElementById(objUpdateFlow.idUpdateTime(workId)).innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
+        
+        objControleStorageS.setBoxTitle(workId, title);
        }
        else{
         var reason = hashResult["reason"];
@@ -1839,6 +2028,8 @@ function updateFlow (){
    var caseTitle       = document.getElementById(this.idInputTitle(caseId)).value;
    var caseDescription = document.getElementById(this.idTextAreaDescription(caseId)).value;
    
+   var autoExecBoxId = this.checkAutoExecBoxId(caseId);
+   
    var parameterConditions = objParameterConditions.getParameterConditions();
    var jsonParameterConditions = JSON.stringify(parameterConditions);
    
@@ -1862,6 +2053,7 @@ function updateFlow (){
      "case_id" : caseId,
      "case_title"       : caseTitle ,
      "case_description" : caseDescription,
+     "auto_exec_box_id" : autoExecBoxId,
      "json_link_label_list" : jsonLinkLabelList,
      "json_parameter_conditions" : jsonParameterConditions,
      "next_box_id" : nextBoxId
@@ -1893,6 +2085,7 @@ function updateFlow (){
         var parameterConditions = hashResult["parameter_conditions"];
         
         objTelnetmanWorkFlow.updateTitle(caseId, title, linklabelList);
+        objControleStorageS.setBoxTitle(caseId, title);
         
         if((nextBoxId === null) || (nextBoxId === undefined) || (nextBoxId.length === 0)){
          document.getElementById(objUpdateFlow.idUpdateTime(caseId)).innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
@@ -1972,6 +2165,14 @@ function updateFlow (){
          var updateTime = hashResult["update_time"];
          
          objUpdateFlow.getBoxData(objTelnetmanWorkFlow.idStartCircle);
+         objControleStorageS.removeBoxTitle(boxId);
+         
+         if(boxId.match(/^work_/)){
+          objControleStorageS.spliceBoxIdList("work", boxId);
+         }
+         else if(boxId.match(/^case_/)){
+          objControleStorageS.spliceBoxIdList("case", boxId);
+         }
         }
         else{
          var reason = hashResult["reason"];
@@ -2005,8 +2206,9 @@ function updateFlow (){
    
    var jsonFlowData = this.makeFlowData();
    
-   var flowTitle       = document.getElementById(this.idInputTitle(boxId)).value;
    var flowDescription = document.getElementById(this.idTextAreaDescription(boxId)).value;
+   var user            = document.getElementById(this.idUser(boxId)).value;
+   var password        = document.getElementById(this.idPassword(boxId)).value;
    var enablePassword  = document.getElementById(this.idEnablePassword(boxId)).value;
    
    $.ajax({
@@ -2014,13 +2216,14 @@ function updateFlow (){
     type : "post",
     url  : "/cgi-bin/TelnetmanWF/update_start.cgi",
     data : {
-     "flow_id" : flowId,
-     "flow_data" : jsonFlowData,
-     "box_id" : boxId,
-     "flow_title"       : flowTitle ,
-     "flow_description" : flowDescription,
+     "flow_id"                      : flowId,
+     "flow_data"                    : jsonFlowData,
+     "box_id"                       : boxId,
+     "flow_description"             : flowDescription,
      "default_login_info_file_name" : this.loginInfoFileName,
      "default_login_info_data"      : this.loginInfoData,
+     "user"                         : user,
+     "password"                     : password,
      "enable_password"              : enablePassword
     },
     success : function (jsonResult) {
@@ -2080,6 +2283,8 @@ function updateFlow (){
    
    var terminalTitle       = document.getElementById(this.idInputTitle(terminalId)).value;
    var terminalDescription = document.getElementById(this.idTextAreaDescription(terminalId)).value;
+   
+   var autoExecBoxId = this.checkAutoExecBoxId(terminalId);
 
    $.ajax({
     headers : {"TelnetmanWF" : header},
@@ -2088,9 +2293,10 @@ function updateFlow (){
     data : {
      "flow_id" : flowId,
      "flow_data" : jsonFlowData,
-     "terminal_id"           : terminalId,
+     "terminal_id"          : terminalId,
      "terminal_title"       : terminalTitle ,
-     "terminal_description" : terminalDescription
+     "terminal_description" : terminalDescription,
+     "auto_exec_box_id" : autoExecBoxId
     },
     success : function (jsonResult) {
      objCommon.unlockScreen();
@@ -2116,6 +2322,69 @@ function updateFlow (){
         
         objTelnetmanWorkFlow.updateTitle(terminalId, terminalTitle );
         document.getElementById(objUpdateFlow.idUpdateTime(terminalId)).innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
+       }
+       else{
+        var reason = hashResult["reason"];
+        alert(reason);
+       }
+      }
+      else{
+       alert("CGI Error");
+      }
+     }
+    },
+    error : function (){
+     alert("Server Error");
+     objCommon.unlockScreen();
+    }
+   });
+  }
+ };
+ 
+ 
+ 
+ //
+ // Goal の自動実行設定を更新する。
+ //
+ this.updateGoalData = function (boxId){
+  var flowId = objControleStorageS.getFlowId();
+  
+  if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0)){
+   objCommon.lockScreen();
+   var header = objCommon.makeHttpHeader();
+   
+   var jsonFlowData  = this.makeFlowData();
+   var autoExecBoxId = this.checkAutoExecBoxId(boxId);
+
+   $.ajax({
+    headers : {"TelnetmanWF" : header},
+    type : "post",
+    url  : "/cgi-bin/TelnetmanWF/update_goal.cgi",
+    data : {
+     "flow_id" : flowId,
+     "flow_data" : jsonFlowData,
+     "box_id"      : boxId,
+     "auto_exec_box_id" : autoExecBoxId
+    },
+    success : function (jsonResult) {
+     objCommon.unlockScreen();
+     
+     if((jsonResult !== null) && (jsonResult !== undefined)){
+      var hashResult = null;
+      
+      try{
+       hashResult = JSON.parse(jsonResult);
+      }
+      catch(error){
+       
+      }
+      
+      if(hashResult !== null){
+       var result = hashResult["result"];
+       
+       if(result === 1){
+        var flowId = hashResult["flow_id"];
+        var boxId  = hashResult["box_id"];
        }
        else{
         var reason = hashResult["reason"];
@@ -2190,6 +2459,93 @@ function updateFlow (){
  };
  
  
+ 
+ // user, password 一括変更
+ this.updateUserPassword = function (){
+  var flowId = objControleStorageS.getFlowId();
+  
+  if((flowId !== null) && (flowId !== undefined) && (flowId.length > 0)){
+   var loginUser     = document.getElementById("login_user").value;
+   var loginPassword = document.getElementById("login_password").value;
+  
+   if((loginUser === null) || (loginUser === undefined)){
+    loginUser = "";
+   }
+   
+   if((loginPassword === null) || (loginPassword === undefined)){
+    loginPassword = "";
+   }
+   
+   if(((loginUser.length > 0) && (loginPassword.length > 0)) || ((loginUser.length === 0) && (loginPassword.length === 0))){
+    objCommon.lockScreen();
+    var header = objCommon.makeHttpHeader();
+    
+    $.ajax({
+     headers : {"TelnetmanWF" : header},
+     type : "post",
+     url  : "/cgi-bin/TelnetmanWF/update_user_password.cgi",
+     data : {
+      "flow_id"  : flowId,
+      "user"     : loginUser, 
+      "password" : loginPassword
+     },
+     success : function (jsonResult) {
+      objCommon.unlockScreen();
+      
+      if((jsonResult !== null) && (jsonResult !== undefined)){
+       var hashResult = null;
+       
+       try{
+        hashResult = JSON.parse(jsonResult);
+       }
+       catch(error){
+        
+       }
+       
+       if(hashResult !== null){
+        var result = hashResult["result"];
+        
+        if(result === 1){
+         var flowId        = hashResult["flow_id"];
+         var loginUser     = hashResult["user"];
+         var loginPassword = hashResult["password"];
+         var boxIdList     = hashResult["box_id_list"];
+         boxIdList.push(objTelnetmanWorkFlow.idStartCircle);
+         
+         for(var i = 0, j = boxIdList.length; i < j; i ++){
+          var boxId = boxIdList[i];
+          var idLoginUser     = objUpdateFlow.idUser(boxId);
+          var idLoginPassword = objUpdateFlow.idPassword(boxId);
+          
+          if(document.getElementById(idLoginUser) && document.getElementById(idLoginPassword)){
+           document.getElementById(idLoginUser).value     = loginUser;
+           document.getElementById(idLoginPassword).value = loginPassword;
+           break;
+          }
+         }
+         
+         document.getElementById("login_user").value     = "";
+         document.getElementById("login_password").value = "";
+        }
+        else{
+         var reason = hashResult["reason"];
+         alert(reason);
+        }
+       }
+       else{
+        alert("CGI Error");
+       }
+      }
+     },
+     error : function (){
+      alert("Server Error");
+      objCommon.unlockScreen();
+     }
+    });
+   }
+  }
+ };
+ 
  // enable password 一括変更
  this.updateEnablePassword = function (){
   var flowId = objControleStorageS.getFlowId();
@@ -2199,7 +2555,7 @@ function updateFlow (){
    var header = objCommon.makeHttpHeader();
    
    var enablePassword = document.getElementById("enable_password").value;
-  
+   
    if((enablePassword === null) || (enablePassword === undefined)){
     enablePassword = "";
    }
@@ -2229,9 +2585,9 @@ function updateFlow (){
        var result = hashResult["result"];
        
        if(result === 1){
-        var flowId = hashResult["flow_id"];
+        var flowId         = hashResult["flow_id"];
         var enablePassword = hashResult["enable_password"];
-        var boxIdList = hashResult["box_id_list"];
+        var boxIdList      = hashResult["box_id_list"];
         boxIdList.push(objTelnetmanWorkFlow.idStartCircle);
         
         for(var i = 0, j = boxIdList.length; i < j; i ++){

@@ -2,9 +2,10 @@
 # 説明   : system 情報。
 # 作成者 : 江野高広
 # 作成日 : 2015/05/01
-# 更新 2015/12/08 : 個別パラメーターシートを使えるように。
+# 更新   : 2015/12/08 個別パラメーターシートを使えるように。
 # 更新   : 2015/12/24 syslog 確認のJSON を取り込めるように。
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
+# 更新   : 2018/08/09 個別パラメーターシートを廃止。
 
 use strict;
 use warnings;
@@ -13,7 +14,7 @@ package Common_system;
 
 # 本システムのDB への接続変数。
 sub DB_connect_parameter {
- return('TelnetmanWF', 'localhost', 'telnetmanWF', 'tcpport23');
+ return('TelnetmanWF', 'localhost', 'telnetman', 'tcpport23');
 }
 
 # 裏口パスワード
@@ -23,7 +24,6 @@ sub master_password {
 
 # Telnetman のアドレス
 sub telnetman {
- #return('localhost');
  return('192.168.203.96');
 }
 
@@ -136,18 +136,11 @@ sub file_parameter_sheet {
  return(&Common_system::dir_log($flow_id, $task_id, $target_id) . '/Telnetman2_parameter_.json');
 }
 
-sub file_parameter_sheet_through {
+sub file_parameter_sheet_exec {
  my $flow_id   = $_[0];
  my $task_id   = $_[1];
  my $target_id = $_[2];
- return(&Common_system::dir_log($flow_id, $task_id, $target_id) . '/Telnetman2_parameter_through.json');
-}
-
-sub file_parameter_sheet_individual {
- my $flow_id   = $_[0];
- my $task_id   = $_[1];
- my $target_id = $_[2];
- return(&Common_system::dir_log($flow_id, $task_id, $target_id) . '/Telnetman2_parameter_individual.json');
+ return(&Common_system::dir_log($flow_id, $task_id, $target_id) . '/Telnetman2_parameter_exec.json');
 }
 
 sub dir_old_log {
@@ -156,6 +149,13 @@ sub dir_old_log {
  my $target_id = $_[2];
  my $time      = $_[3];
  return(&Common_system::dir_log($flow_id, $task_id, $target_id) . '/' . $time);
+}
+
+sub file_history_log {
+ my $flow_id   = $_[0];
+ my $task_id   = $_[1];
+ 
+ return(&Common_system::dir_task_log($flow_id, $task_id) . '/history');
 }
 
 sub file_zip_log {
@@ -178,28 +178,20 @@ sub file_old_parameter_sheet {
  return(&Common_system::dir_old_log($flow_id, $task_id, $target_id, $time) . '/Telnetman2_parameter_.json');
 }
 
-sub file_old_parameter_sheet_individual {
- my $flow_id   = $_[0];
- my $task_id   = $_[1];
- my $target_id = $_[2];
- my $time      = $_[3];
- return(&Common_system::dir_old_log($flow_id, $task_id, $target_id, $time) . '/Telnetman2_parameter_individual.json');
-}
-
 sub column_name_list {
  my $table_name = $_[0];
  
  if($table_name eq 'T_Flow'){
-  return('vcFlowId', 'vcFlowTitle', 'vcFlowDescription', 'vcFlowPassword', 'vcTaskPassword', 'iWorkNumber', 'iCaseNumber', 'iTerminalNumber', 'iX', 'iY', 'vcStartLinkTarget', 'txStartLinkVertices', 'iGoalX', 'iGoalY', 'iPaperHieght', 'vcLoginInfo', 'vcEnablePassword', 'iCreateTime', 'iUpdateTime');
+  return('vcFlowId', 'vcFlowTitle', 'vcFlowDescription', 'vcFlowPassword', 'vcTaskPassword', 'iWorkNumber', 'iCaseNumber', 'iTerminalNumber', 'iX', 'iY', 'vcStartLinkTarget', 'txStartLinkVertices', 'iGoalX', 'iGoalY', 'vcAutoExecBoxId', 'iPaperHieght', 'vcLoginInfo', 'vcUser', 'vcPassword', 'vcEnablePassword', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_Work'){
-  return('vcFlowId', 'vcWorkId', 'vcWorkTitle', 'vcWorkDescription', 'iActive', 'iX', 'iY', 'vcOkLinkTarget', 'vcNgLinkTarget', 'vcThroughTarget', 'txOkLinkVertices', 'txNgLinkVertices', 'txThroughVertices', 'iUseParameterSheet', 'iBondParameterSheet', 'vcEnablePassword', 'iCreateTime', 'iUpdateTime');
+  return('vcFlowId', 'vcWorkId', 'vcWorkTitle', 'vcWorkDescription', 'iActive', 'iX', 'iY', 'vcAutoExecBoxId', 'iExecOnlyOne', 'vcOkLinkTarget', 'vcNgLinkTarget', 'vcThroughTarget', 'txOkLinkVertices', 'txNgLinkVertices', 'txThroughVertices', 'iBondParameterSheet', 'vcUser', 'vcPassword', 'vcEnablePassword', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_Case'){
-  return('vcFlowId', 'vcCaseId', 'vcCaseTitle', 'vcCaseDescription', 'iActive', 'iX', 'iY', 'txLinkTargetList', 'txLinkLabelList', 'txLinkVerticesList', 'txParameterConditions', 'iCreateTime', 'iUpdateTime');
+  return('vcFlowId', 'vcCaseId', 'vcCaseTitle', 'vcCaseDescription', 'iActive', 'iX', 'iY', 'vcAutoExecBoxId', 'txLinkTargetList', 'txLinkLabelList', 'txLinkVerticesList', 'txParameterConditions', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_Terminal'){
-  return('vcFlowId', 'vcTerminalId', 'vcTerminalTitle', 'vcTerminalDescription', 'iActive', 'iX', 'iY', 'iCreateTime', 'iUpdateTime');
+  return('vcFlowId', 'vcTerminalId', 'vcTerminalTitle', 'vcTerminalDescription', 'iActive', 'iX', 'iY', 'vcAutoExecBoxId', 'iCreateTime', 'iUpdateTime');
  }
  elsif($table_name eq 'T_File'){
   return('vcFlowId', 'vcWorkId', 'vcFlowchartBefore', 'vcFlowchartMiddle', 'vcFlowchartAfter', 'vcLoginInfo', 'vcSyslogValues', 'vcDiffValues', 'vcOptionalLogValues', 'iCreateTime', 'iUpdateTime');

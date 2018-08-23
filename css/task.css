@@ -75,26 +75,80 @@ div#controle_area p {
 }
 
 
-div#loading_message {
+div.lockscreen_board {
  position : relative;
- width : 400px;
- top : 200px;
+ width : 800px;
+ top : 60px;
  left : 50%;
- margin-left : -200px;
- padding : 24px;
-
- text-align : center;
+ margin-left : -400px;
+ 
+ padding : 20px;
 
  border  : 1px solid #a0a0a0;
- background-color : #fafaf0;
+ background-color : #fafafa;
 
  border-radius: 9px;
  box-shadow : 0px 0px 9px 1px rgba(0,0,0,0.4);
 }
 
-div#loading_message span {
+div.lockscreen_header {
+ position : relative;
+ 
+ margin : auto;
+ width : 758px
+ text-align : left;
+ padding-bottom : 10px;
+}
+
+div.lockscreen_header span {
+ font-size : 16px;
+ font-weight : bold;
+}
+
+div.lockscreen_header img {
+ position : absolute;
+ top  : 2px;
+ right : 4px;
+ cursor : pointer;
+}
+
+div.lockscreen_header button {
+ position : absolute;
+ top  : 2px;
+ right : 4px;
+ cursor : pointer;
+}
+
+div.lockscreen_message {
+ position : relative;
+ 
+ margin : auto;
+ width : 600px;
+ text-align : center;
+ padding-bottom : 10px;
+}
+
+div.lockscreen_message span {
  font-size : 14px;
  line-height: 18px;
+}
+
+div.history_area {
+ position : relative;
+ 
+ margin : auto;
+ width : 758px;
+ height : 300px;
+ text-align : left;
+ overflow : auto;
+ background-color : #e0e0e0;
+ border : solid 1px #c0c0c0;
+ font-size : 12px;
+ color : #303030;
+}
+
+div.history_area:focus{
+ outline : none;
 }
 
 

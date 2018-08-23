@@ -2,6 +2,7 @@
 # 説明   : case のデータを取得する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/15
+# 更新   : 2018/06/28 vcAutoExecBoxId を追加。
 
 use strict;
 use warnings;
@@ -43,7 +44,6 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
 
 
 
@@ -54,7 +54,7 @@ my $case_id = $cgi -> param('case_id');
 #
 # case data を取り出す。
 #
-my $select_column = 'vcCaseTitle,vcCaseDescription,txLinkTargetList,txLinkLabelList,txLinkVerticesList,txParameterConditions,iUpdateTime';
+my $select_column = 'vcCaseTitle,vcCaseDescription,vcAutoExecBoxId,txLinkTargetList,txLinkLabelList,txLinkVerticesList,txParameterConditions,iUpdateTime';
 my $table         = 'T_Case';
 my $condition     = "where vcFlowId = '" . $flow_id . "' and vcCaseId = '" . $case_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
@@ -68,34 +68,36 @@ $access2db -> close;
 
 my $title                     = $ref_case -> [0];
 my $description               = $ref_case -> [1];
-my $json_link_target_list     = $ref_case -> [2];
-my $json_link_label_list      = $ref_case -> [3];
-my $json_link_vertices_list   = $ref_case -> [4]; 
-my $json_parameter_conditions = $ref_case -> [5];
-my $update_time               = $ref_case -> [6];
+my $auto_exec_box_id          = $ref_case -> [2];
+my $json_link_target_list     = $ref_case -> [3];
+my $json_link_label_list      = $ref_case -> [4];
+my $json_link_vertices_list   = $ref_case -> [5]; 
+my $json_parameter_conditions = $ref_case -> [6];
+my $update_time               = $ref_case -> [7];
 
 my $ref_link_target_list     = &JSON::from_json($json_link_target_list);
 my $ref_link_label_list      = &JSON::from_json($json_link_label_list);
 my $ref_link_vertices_list   = &JSON::from_json($json_link_vertices_list);
 my $ref_parameter_conditions = &JSON::from_json($json_parameter_conditions);
-$update_time += 0;
 
+$update_time += 0;
 
 
 #
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'case_id' => $case_id,
- 'title' => $title,
- 'description' => $description,
- 'link_target_list' => $ref_link_target_list,
- 'link_label_list' => $ref_link_label_list,
- 'link_vertices_list' => $ref_link_vertices_list,
+ 'result'               => 1,
+ 'flow_id'              => $flow_id,
+ 'case_id'              => $case_id,
+ 'title'                => $title,
+ 'description'          => $description,
+ 'auto_exec_box_id'     => $auto_exec_box_id,
+ 'link_target_list'     => $ref_link_target_list,
+ 'link_label_list'      => $ref_link_label_list,
+ 'link_vertices_list'   => $ref_link_vertices_list,
  'parameter_conditions' => $ref_parameter_conditions,
- 'update_time' => $update_time
+ 'update_time'          => $update_time
 );
 
 my $json_results = &JSON::to_json(\%results);

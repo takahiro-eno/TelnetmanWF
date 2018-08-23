@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/05/29
 # 更新 2015/12/08 : 個別パラメーターシートを使えるように。
+# 更新 2018/08/09 : 個別パラメーターシートを廃止。
 
 use strict;
 use warnings;
@@ -25,38 +26,12 @@ my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_par
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
 
-
-=pod
-#
-# パスワードが正しいか確認。
-#
-my $ref_auth = &TelnetmanWF_common::authorize($cgi, $access2db);
-
-if($ref_auth -> {'result'} == 0){
- my $json_results = &JSON::to_json($ref_auth);
- 
- print "Content-type: text/plain; charset=UTF-8\n\n";
- print $json_results;
- 
- $access2db -> close;
- 
- exit(0);
-}
-
-my $flow_id = $ref_auth -> {'flow_id'};
-my $task_id = $ref_auth -> {'task_id'};
-=cut
 my $flow_id = $cgi -> param('flow_id');
 my $task_id = $cgi -> param('task_id');
 
 my $box_id  = $cgi -> param('box_id');
 my $time    = $cgi -> param('time');
 my $node    = $cgi -> param('node');
-my $individual = $cgi -> param('individual');
-
-unless(defined($individual) && (length($individual) > 0)){
- $individual = 0;
-}
 
 
 
@@ -65,20 +40,10 @@ unless(defined($individual) && (length($individual) > 0)){
 #
 my $file_parameter_sheet = '';
 if(defined($time) && (length($time) > 0) && ($time ne '0')){
- if($individual == 1){
-  $file_parameter_sheet = &Common_system::file_old_parameter_sheet_individual($flow_id, $task_id, $box_id, $time);
- }
- else{
-  $file_parameter_sheet = &Common_system::file_old_parameter_sheet($flow_id, $task_id, $box_id, $time);
- }
+ $file_parameter_sheet = &Common_system::file_old_parameter_sheet($flow_id, $task_id, $box_id, $time);
 }
 else{
- if($individual == 1){
-  $file_parameter_sheet = &Common_system::file_parameter_sheet_individual($flow_id, $task_id, $box_id);
- }
- else{
-  $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $box_id);
- }
+ $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $box_id);
 }
 
 unless(-f $file_parameter_sheet){
@@ -130,9 +95,7 @@ my $download_file_name = 'Telnetman2_parameter_' . &Common_sub::escape_filename(
 if(defined($time) && (length($time) > 0) && ($time ne '0')){
  $download_file_name .= '_' . (&Common_sub::YYYYMMDDhhmmss($time, 'YYYYMMDD-hhmmss'))[0];
 }
-if($individual == 1){
- $download_file_name .= '_個別';
-}
+
 $download_file_name .= '.csv';
 
 $access2db -> close;

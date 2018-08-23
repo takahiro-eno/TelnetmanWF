@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# 説明   : Goal のデータを取得する。
+# 説明   : goal のデータを取得する。
 # 作成者 : 江野高広
-# 作成日 : 2018/07/02
+# 作成日 : 2015/05/30
 
 use strict;
 use warnings;
@@ -43,25 +43,18 @@ if($ref_auth -> {'result'} == 0){
 }
 
 my $flow_id = $ref_auth -> {'flow_id'};
+my $task_id = $ref_auth -> {'task_id'};
 
-
+$access2db -> close;
 
 my $box_id = $cgi -> param('box_id');
 
 
 
 #
-# goal data を取り出す。
+# パラメーターシートが存在するかどうか確認する。
 #
-my $select_column = 'vcAutoExecBoxId';
-my $table         = 'T_Flow';
-my $condition     = "where vcFlowId = '" . $flow_id . "'";
-$access2db -> set_select($select_column, $table, $condition);
-my $auto_exec_box_id = $access2db -> select_col1;
-
-
-
-$access2db -> close;
+my ($exists_parameter_sheet, $file_parameter_sheet, $update_time) = &TelnetmanWF_common::exists_parameter_sheet($flow_id, $task_id, $box_id);
 
 
 
@@ -69,11 +62,29 @@ $access2db -> close;
 # 結果をまとめる。
 #
 my %results = (
- 'result'           => 1,
- 'flow_id'          => $flow_id,
- 'box_id'           => $box_id,
- 'auto_exec_box_id' => $auto_exec_box_id
+ 'result' => 1,
+ 'flow_id' => $flow_id,
+ 'task_id' => $task_id,
+ 'box_id'  => $box_id,
+ 'exists_parameter_sheet' => $exists_parameter_sheet,
+ 'update_time'            => $update_time
 );
+
+
+
+#
+# パラメーターシートがある場合はノードリストも返す。
+#
+if($exists_parameter_sheet == 1){
+ open(PSHEET, '<', $file_parameter_sheet);
+ my $json_parameter_sheet = <PSHEET>;
+ close(PSHEET);
+ 
+ my ($ref_node_list, $ref_interface_list, $ref_node_info, $ref_interface_info, $error_message) = &TelnetmanWF_common::parse_parameter_sheet($json_parameter_sheet);
+ $results{'node_list'} = $ref_node_list;
+}
+
+
 
 my $json_results = &JSON::to_json(\%results);
 

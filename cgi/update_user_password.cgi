@@ -1,7 +1,7 @@
 #!/usr/bin/perl
-# 説明   : enable password を一括変更する。
+# 説明   : user, password を一括変更する。
 # 作成者 : 江野高広
-# 作成日 : 2018/01/09
+# 作成日 : 2018/08/15
 
 use strict;
 use warnings;
@@ -49,24 +49,29 @@ my $flow_id = $ref_auth -> {'flow_id'};
 
 
 #
-# enable password を受け取る。
+# user, password を受け取る。
 #
-my $enable_password = $cgi -> param('enable_password');
+my $user     = $cgi -> param('user');
+my $password = $cgi -> param('password');
 
-unless(defined($enable_password)){
- $enable_password = '';
+unless(defined($user)){
+ $user = '';
 }
 
-my $encoded_enable_password = &TelnetmanWF_common::encode_password($enable_password);
+unless(defined($password)){
+ $password = '';
+}
+
+my $encoded_password = &TelnetmanWF_common::encode_password($password);
 
 
 
 #
-# enable password が設定されているwork を特定する。
+# user, password が設定されているwork を特定する。
 #
 my $select_column = 'vcWorkId';
 my $table         = 'T_Work';
-my $condition     = "where vcFlowId = '" . $flow_id . "' and vcEnablePassword != ''";
+my $condition     = "where vcFlowId = '" . $flow_id . "' and (vcEnablePassword != '' or vcUser != '')";
 $access2db -> set_select($select_column, $table, $condition);
 my $ref_box_id_list = $access2db -> select_array_col1;
 
@@ -75,7 +80,7 @@ my $ref_box_id_list = $access2db -> select_array_col1;
 #
 # デフォルトのenable password の更新。
 #
-my @set = ("vcEnablePassword = '" . $encoded_enable_password . "'");
+my @set = ("vcUser = '" . $user . "'", "vcPassword = '" . $encoded_password . "'");
 $table     = 'T_Flow';
 $condition = "where vcFlowId = '" . $flow_id . "'";
 $access2db -> set_update(\@set, $table, $condition);
@@ -84,7 +89,7 @@ $access2db -> update_exe;
 
 
 #
-# work のenable password の更新。
+# work のuser, password の更新。
 #
 if(scalar(@$ref_box_id_list) > 0){
  $table     = 'T_Work';
@@ -98,10 +103,11 @@ $access2db -> close;
 
 
 my %results = (
- 'result'          => 1,
- 'flow_id'         => $flow_id,
- 'enable_password' => $enable_password,
- 'box_id_list'     => $ref_box_id_list
+ 'result'      => 1,
+ 'flow_id'     => $flow_id,
+ 'user'        => $user,
+ 'password'    => $password,
+ 'box_id_list' => $ref_box_id_list
 );
 
 my $json_results = &JSON::to_json(\%results);

@@ -2,6 +2,7 @@
 # 説明   : 手動OK, NG 分岐を実行する。
 # 作成者 : 江野高広
 # 作成日 : 2015/06/24
+# 更新   : 2018/08/13  自動実行に対応。
 
 use strict;
 use warnings;
@@ -14,6 +15,7 @@ use Common_system;
 use Common_sub;
 use Access2DB;
 use TelnetmanWF_common;
+use Exec_box;
 
 my $cgi = new CGI;
 
@@ -80,8 +82,26 @@ my $ref_ng_link_target = &JSON::from_json($json_ng_link_target);
 #
 my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $work_id);
 unless(-f $file_parameter_sheet){
+ my ($ref_empty_box_id_list, $ref_fill_box_id_list) = &TelnetmanWF_common::make_box_id_list($access2db, $flow_id, $task_id);
+ 
+ my %results = (
+  'result' => 1,
+  'flow_id' => $flow_id,
+  'task_id' => $task_id,
+  'work_id' => $work_id,
+  'box_id'  => $work_id,
+  'status'  => 2,
+  'error_message'     => '',
+  'auto_exec_box_id'  => $work_id,
+  'empty_box_id_list' => $ref_empty_box_id_list,
+  'fill_box_id_list'  => $ref_fill_box_id_list,
+  'exists_parameter_sheet' => 0
+ );
+ 
+ my $json_results = &JSON::to_json(\%results);
+
  print "Content-type: text/plain; charset=UTF-8\n\n";
- print '{"result":0,"reason":"パラメーターシートがありません。"}';
+ print $json_results;
  
  $access2db -> close;
  exit(0);
@@ -132,11 +152,14 @@ foreach my $ref_target ($ref_ok_link_target, $ref_ng_link_target){
 # 既存のパラメーターシートを削除。残すノードがあれば作成。
 #
 unlink($file_parameter_sheet);
+my $exists_parameter_sheet = 0;
 
 if(length($json_remaining_parameter_sheet) > 0){
  open(PSHEET, '>', $file_parameter_sheet);
  print PSHEET $json_remaining_parameter_sheet;
  close(PSHEET);
+ 
+ $exists_parameter_sheet = 1;
 }
 
 
@@ -144,8 +167,28 @@ if(length($json_remaining_parameter_sheet) > 0){
 #
 # ステータスを記録。
 #
+my $time = &TelnetmanWF_common::update_work_status($access2db, $flow_id, $task_id, $work_id, 2, '', '', '');
+
+
+
+#
+# 次のBox の自動実行。
+#
+my $auto_exec_box_id = '';
 my $status = 2;
-my $time = &TelnetmanWF_common::update_status($access2db, $flow_id, $task_id, $work_id, $status, '', '', \@target_id_list);
+my $error_message = '';
+
+foreach my $target_id (@target_id_list){
+ ($auto_exec_box_id, $status, $error_message) = &Exec_box::auto_exec($access2db, $flow_id, $task_id, $target_id);
+
+ if($status == -1){
+  last;
+ }
+}
+
+my ($ref_empty_box_id_list, $ref_fill_box_id_list) = &TelnetmanWF_common::make_box_id_list($access2db, $flow_id, $task_id);
+
+
 $access2db -> close;
 
 
@@ -155,32 +198,17 @@ $access2db -> close;
 #
 my %results = (
  'result' => 1,
- 'status' => $status,
  'flow_id' => $flow_id,
  'task_id' => $task_id,
  'work_id' => $work_id,
- 'update_time' => $time,
- 'target_list' => \@target_id_list
+ 'box_id'  => $work_id,
+ 'status'  => $status,
+ 'error_message'     => $error_message,
+ 'auto_exec_box_id'  => $auto_exec_box_id,
+ 'empty_box_id_list' => $ref_empty_box_id_list,
+ 'fill_box_id_list'  => $ref_fill_box_id_list,
+ 'exists_parameter_sheet' => $exists_parameter_sheet
 );
-
-
-
-#
-# 元のbox にパラメーターシートがあるかどうか確認。
-#
-if(-f $file_parameter_sheet){
- $results{'exists_parameter_sheet'} = 1;
- 
- open(PSHEET, '<', $file_parameter_sheet);
- my $json_parameter_sheet = <PSHEET>;
- close(PSHEET);
- 
- my ($ref_node_list, $ref_interface_list, $ref_node_info, $ref_interface_info, $error_message) = &TelnetmanWF_common::parse_parameter_sheet($json_parameter_sheet);
- $results{'node_list'} = $ref_node_list;
-}
-else{
- $results{'exists_parameter_sheet'} = 0;
-}
 
 
 

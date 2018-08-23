@@ -137,15 +137,7 @@ function parameterConditions (){
    elParameterConditions.appendChild(elDiv);
    this.createConditionArea(N);
    
-   if(N === M - 1){
-    $("#" + this.idConditionArea(N)).animate({height:"show"}, "slow", function(){
-     var boxDataTableBottom = objUpdateFlow.getBoxDataTableBottom(objParameterConditions.caseId);
-     objTelnetmanWorkFlow.optimizeWorkflowAreaHeight(boxDataTableBottom);
-    });
-   }
-   else{
-    $("#" + this.idConditionArea(N)).animate({height:"show"}, "slow");
-   }
+   $("#" + this.idConditionArea(N)).animate({height:"show"}, "slow");
   }
   
   var elImgAdd = document.createElement("img");

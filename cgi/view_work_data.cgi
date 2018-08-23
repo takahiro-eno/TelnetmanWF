@@ -2,7 +2,10 @@
 # 説明   : work のデータを取得する。
 # 作成者 : 江野高広
 # 作成日 : 2015/05/12
-# 更新 2015/12/08 : 個別パラメーターシートを使えるように。
+# 更新   : 2015/12/08個別パラメーターシートを使えるように。
+# 更新   : 2018/06/27 user, password を追加。
+# 更新   : 2018/07/06 iExecOnlyOne に対応。
+# 更新   : 2018/08/09  自動実行に対応。
 
 use strict;
 use warnings;
@@ -55,7 +58,7 @@ my $work_id = $cgi -> param('work_id');
 #
 # work data を取り出す。
 #
-my $select_column = 'vcWorkTitle,vcWorkDescription,iUseParameterSheet';
+my $select_column = 'vcWorkTitle,vcWorkDescription,iExecOnlyOne,vcUser,vcPassword';
 my $table         = 'T_Work';
 my $condition     = "where vcFlowId = '" . $flow_id . "' and vcWorkId = '" . $work_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
@@ -66,7 +69,7 @@ my $ref_work = $access2db -> select_cols;
 #
 # ステータスを確認
 #
-my ($status, $update_time) = &TelnetmanWF_common::check_status($access2db, $flow_id, $task_id, $work_id);
+my ($status, $error_message, $update_time) = &TelnetmanWF_common::check_work_status($access2db, $flow_id, $task_id, $work_id);
 
 
 
@@ -84,38 +87,27 @@ my $login_info = $access2db -> select_col1;
 #
 # 流れ図があるかどうか確認する。
 #
-$select_column = 'vcFlowchartBefore,vcFlowchartMiddle,vcFlowchartAfter';
-$table         = 'T_File';
-$condition     = "where vcFlowId = '" . $flow_id . "' and vcWorkId = '" . $work_id . "'";
-$access2db -> set_select($select_column, $table, $condition);
-my $ref_file_names = $access2db -> select_cols;
+my $exists_flowchart_data = &TelnetmanWF_common::exists_flowchart_data($access2db, $flow_id, $work_id);
 
 
 $access2db -> close;
 
 
 
-my $title                = $ref_work -> [0];
-my $description          = $ref_work -> [1];
-my $use_parameter_sheet  = $ref_work -> [2];
+my $title          = $ref_work -> [0];
+my $description    = $ref_work -> [1];
+my $exec_only_one  = $ref_work -> [2];
+my $login_user     = $ref_work -> [3];
+my $login_password = $ref_work -> [4];
 
-$use_parameter_sheet += 0;
-
-my $exists_flowchart_data = 1;
-if((length($ref_file_names -> [0]) == 0) && (length($ref_file_names -> [1]) == 0) && (length($ref_file_names -> [2]) == 0)){
- $exists_flowchart_data = 0;
-}
+$exec_only_one += 0;
 
 
 
 #
 # パラメーターシートが存在するかどうか確認する。
 #
-my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $work_id);
-my $exists_parameter_sheet = 0;
-if(-f $file_parameter_sheet){
- $exists_parameter_sheet = 1;
-}
+my ($exists_parameter_sheet, $file_parameter_sheet) = (&TelnetmanWF_common::exists_parameter_sheet($flow_id, $task_id, $work_id))[0,1];
 
 
 
@@ -123,16 +115,21 @@ if(-f $file_parameter_sheet){
 # 結果をまとめる。
 #
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'task_id' => $task_id,
- 'work_id' => $work_id,
- 'title' => $title,
- 'description' => $description,
- 'exists_flowchart_data' => $exists_flowchart_data,
+ 'result'                 => 1,
+ 'flow_id'                => $flow_id,
+ 'task_id'                => $task_id,
+ 'work_id'                => $work_id,
+ 'box_id'                 => $work_id,
+ 'title'                  => $title,
+ 'description'            => $description,
+ 'exec_only_one'          => $exec_only_one,
+ 'exists_flowchart_data'  => $exists_flowchart_data,
  'exists_parameter_sheet' => $exists_parameter_sheet,
- 'status' => $status,
- 'update_time' => $update_time
+ 'login_user'             => $login_user,
+ 'login_password'         => $login_password,
+ 'status'                 => $status,
+ 'error_message'          => $error_message,
+ 'update_time'            => $update_time
 );
 
 
@@ -142,17 +139,17 @@ my %results = (
 #
 if(length($login_info) > 0){
  my $file_login_info = &Common_system::file_login_info($flow_id, $work_id);
- my $login_user = &TelnetmanWF_common::login_user($file_login_info);
+ my $login_info_login_user = &TelnetmanWF_common::login_user($file_login_info);
  
- if(defined($login_user) && (length($login_user) > 0)){
-  $results{'login_user'} = $login_user;
+ if(defined($login_info_login_user) && (length($login_info_login_user) > 0)){
+  $results{'login_info_login_user'} = $login_info_login_user;
  }
 }
 
 
 
 #
-# パラメーターシートがある場合はノードリストも返す。
+# パラメーターシートがある場合はノードリストを作る。
 #
 if($exists_parameter_sheet == 1){
  open(PSHEET, '<', $file_parameter_sheet);
@@ -161,6 +158,9 @@ if($exists_parameter_sheet == 1){
  
  my ($ref_node_list, $ref_interface_list, $ref_node_info, $ref_interface_info, $error_message) = &TelnetmanWF_common::parse_parameter_sheet($json_parameter_sheet);
  $results{'node_list'} = $ref_node_list;
+}
+else{
+ $results{'node_list'} = [];
 }
 
 
@@ -183,8 +183,7 @@ if($exists_flowchart_data == 1){
     'ng' => 0,
     'error' => 0,
     'diff' => 0,
-    'optional' => 0,
-    'individual_parameter_sheet' => 0
+    'optional' => 0
    };
   
    my $dir_old_log = &Common_system::dir_old_log($flow_id, $task_id, $work_id, $time);
@@ -209,9 +208,6 @@ if($exists_flowchart_data == 1){
     elsif($log_name =~ /^optional/i){
      $log_type_list{$time} -> {'optional'} = 1;
     }
-    elsif($log_name =~ /^Telnetman2_parameter_individual/){
-     $log_type_list{$time} -> {'individual_parameter_sheet'} = 1;
-    }
    }
    
    $time += 0;
@@ -221,7 +217,6 @@ if($exists_flowchart_data == 1){
  
  @log_time_list = sort {$b <=> $a} @log_time_list;
  
- $results{'use_parameter_sheet'} = $use_parameter_sheet;
  $results{'log_time_list'} = \@log_time_list;
  $results{'log_type_list'} = \%log_type_list;
 }
