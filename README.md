@@ -10,7 +10,7 @@ This is a tool to create workflow with Telnetman.
 1. install minimal CentOS7
 1. `git clone https://github.com/takahiro-eno/TelnetmanWF.git`
 1. `cd TelnetmanWF`
-1. `sudo sh Telnetman2_install.sh`
+1. `sudo sh TelnetmanWF_install.sh`
 1. `cd ..`
 1. `rm -rf TelnetmanWF`
 1. `sudo reboot`
