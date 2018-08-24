@@ -169,53 +169,58 @@ else{
 # 流れ図データがある場合は過去ログ一覧も返す。
 #
 if($exists_flowchart_data == 1){
- my $dir_log = &Common_system::dir_log($flow_id, $task_id, $work_id);
- opendir(DLOG, $dir_log);
- my @log_dir_list = readdir(DLOG);
- closedir(DLOG);
- 
  my @log_time_list = ();
  my %log_type_list = ();
- foreach my $time (@log_dir_list){
-  if($time =~ /^[0-9]/){
-   $log_type_list{$time} = {
-    'ok' => 0,
-    'ng' => 0,
-    'error' => 0,
-    'diff' => 0,
-    'optional' => 0
-   };
-  
-   my $dir_old_log = &Common_system::dir_old_log($flow_id, $task_id, $work_id, $time);
-   
-   opendir(DOLOG, $dir_old_log);
-   my @log_files = readdir(DOLOG);
-   closedir(DOLOG);
-   
-   foreach my $log_name (@log_files){
-    if($log_name =~ /^ok_/i){
-     $log_type_list{$time} -> {'ok'} = 1;
-    }
-    elsif($log_name =~ /^ng_/i){
-     $log_type_list{$time} -> {'ng'} = 1;
-    }
-    elsif($log_name =~ /^error_/i){
-     $log_type_list{$time} -> {'error'} = 1;
-    }
-    elsif($log_name =~ /^diff_/i){
-     $log_type_list{$time} -> {'diff'} = 1;
-    }
-    elsif($log_name =~ /^optional/i){
-     $log_type_list{$time} -> {'optional'} = 1;
-    }
-   }
-   
-   $time += 0;
-   push(@log_time_list, $time);
-  }
- }
  
- @log_time_list = sort {$b <=> $a} @log_time_list;
+ my $dir_log = &Common_system::dir_log($flow_id, $task_id, $work_id);
+ 
+ if(-d $dir_log){
+  opendir(DLOG, $dir_log);
+  my @log_dir_list = readdir(DLOG);
+  closedir(DLOG);
+  
+  
+  foreach my $time (@log_dir_list){
+   if($time =~ /^[0-9]/){
+    $log_type_list{$time} = {
+     'ok' => 0,
+     'ng' => 0,
+     'error' => 0,
+     'diff' => 0,
+     'optional' => 0
+    };
+   
+    my $dir_old_log = &Common_system::dir_old_log($flow_id, $task_id, $work_id, $time);
+    
+    opendir(DOLOG, $dir_old_log);
+    my @log_files = readdir(DOLOG);
+    closedir(DOLOG);
+    
+    foreach my $log_name (@log_files){
+     if($log_name =~ /^ok_/i){
+      $log_type_list{$time} -> {'ok'} = 1;
+     }
+     elsif($log_name =~ /^ng_/i){
+      $log_type_list{$time} -> {'ng'} = 1;
+     }
+     elsif($log_name =~ /^error_/i){
+      $log_type_list{$time} -> {'error'} = 1;
+     }
+     elsif($log_name =~ /^diff_/i){
+      $log_type_list{$time} -> {'diff'} = 1;
+     }
+     elsif($log_name =~ /^optional/i){
+      $log_type_list{$time} -> {'optional'} = 1;
+     }
+    }
+    
+    $time += 0;
+    push(@log_time_list, $time);
+   }
+  }
+  
+  @log_time_list = sort {$b <=> $a} @log_time_list;
+ }
  
  $results{'log_time_list'} = \@log_time_list;
  $results{'log_type_list'} = \%log_type_list;

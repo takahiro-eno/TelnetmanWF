@@ -23,7 +23,6 @@ https&#58;//server address/TelnetmanWF/
 1. `mv ./TelnetmanWF/docker-compose.yml .`
 1. `sudo docker-compose build`
 1. `sudo docker-compose up -d`
-1. `rm -rf Telnetman2 TelnetmanWF`
 
 https&#58;//host address:8443/Telnetman2/  
 https&#58;//host address:9443/TelnetmanWF/

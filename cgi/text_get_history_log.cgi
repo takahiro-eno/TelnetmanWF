@@ -56,11 +56,13 @@ $access2db -> close;
 my $history_log = '';
 my $file_history_log = &Common_system::file_history_log($flow_id, $task_id);
 
-&CORE::open(my $fh, '<', $file_history_log);
-while(my $line = <$fh>){
- $history_log .= $line;
+if(-f $file_history_log){
+ &CORE::open(my $fh, '<', $file_history_log);
+ while(my $line = <$fh>){
+  $history_log .= $line;
+ }
+ &CORE::close($fh);
 }
-&CORE::close($fh);
 
 
 print "Content-type: text/plain; charset=UTF-8\n\n";

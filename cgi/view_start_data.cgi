@@ -79,7 +79,7 @@ $access2db -> close;
 
 
 
-if(length($update_time) > 0){
+if(defined($update_time) && (length($update_time) > 0)){
  $update_time += 0;
 }
 else{

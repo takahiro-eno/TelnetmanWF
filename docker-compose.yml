@@ -1,14 +1,12 @@
 version: '2'
 
 services:
- telentman-wf:
+ telnetman-wf:
   depends_on:
    - telnetman2
   build: "./TelnetmanWF"
   ports:
    - "9443:9443"
-  links:
-   - telnetman2
  
  telnetman2:
   build: "./Telnetman2"

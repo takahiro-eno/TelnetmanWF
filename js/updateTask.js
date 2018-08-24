@@ -2509,7 +2509,9 @@ function updateTask (){
         var result = hashResult["result"];
          
         if(result === 1){
-         document.getElementById(objUpdateTask.idLockScreenMessage).innerHTML = "<span>強制終了します。</span><br><span>しばらくお待ち下さい。</span>";
+         if(document.getElementById(objUpdateTask.idLockScreenMessage)){
+          document.getElementById(objUpdateTask.idLockScreenMessage).innerHTML = "<span>強制終了します。</span><br><span>しばらくお待ち下さい。</span>";
+         }
         }
         else{
          var reason = hashResult["reason"];

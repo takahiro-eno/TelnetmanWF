@@ -112,6 +112,17 @@ if($import_type == 2){
   exit(0);
  }
  
+ # 実行中のタスクがあれば上書きさせない。
+ my $exist_running_work = &TelnetmanWF_common::exist_running_work($access2db, $flow_id);
+ 
+ if($exist_running_work == 1){
+  print "Content-type: text/plain; charset=UTF-8\n\n";
+  print '{"result":0,"reason":"実行中のタスクがあります。"}';
+  
+  $access2db -> close;
+  exit(0);
+ }
+ 
  # データファイル削除
  my $dir_data_root = &Common_system::dir_data_root($flow_id);
  &File::Path::rmtree($dir_data_root);

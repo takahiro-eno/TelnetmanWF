@@ -119,8 +119,6 @@ if(defined($check_status) && ($check_status == 1)){
 # Telnetman へのログインID, Password を記録する。ログを残す。
 #
 my $update_time = &TelnetmanWF_common::set_telnetman_login($access2db, $flow_id, $task_id, $telnetman_user, $telnetman_password);
-my $ref_node_list = (&TelnetmanWF_common::parse_parameter_sheet($json_parameter_sheet))[0];
-&TelnetmanWF_common::write_history($access2db, $flow_id, $task_id, 'start_circle', $ref_node_list, $update_time, 2);
 
 
 
@@ -172,6 +170,11 @@ unless(-d $dir_log){
  mkdir($dir_log, 0755);
 }
 
+# 実行履歴の書き込み。
+my $ref_node_list = (&TelnetmanWF_common::parse_parameter_sheet($json_parameter_sheet))[0];
+&TelnetmanWF_common::write_history($access2db, $flow_id, $task_id, 'start_circle', $ref_node_list, $update_time, 2);
+
+# 次の箱へのパラメーターシートの移動。
 my $push_result = &TelnetmanWF_common::push_parameter_sheet($file_parameter_sheet, $json_parameter_sheet);
 
 # 次のBox の自動実行。
