@@ -178,6 +178,10 @@ sub file_old_parameter_sheet {
  return(&Common_system::dir_old_log($flow_id, $task_id, $target_id, $time) . '/Telnetman2_parameter_.json');
 }
 
+sub file_sql_log {
+ return(&Common_system::dir_var() . '/log/sql_log');
+}
+
 sub column_name_list {
  my $table_name = $_[0];
  
