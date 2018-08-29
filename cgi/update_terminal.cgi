@@ -26,6 +26,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -40,8 +41,8 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
- 
  exit(0);
 }
 
@@ -208,6 +209,7 @@ while(my ($_terminal_id, $ref_terminal_data) = each(%$terminal_list)){
  my $count = $access2db -> update_exe;
 }
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 my %results = (

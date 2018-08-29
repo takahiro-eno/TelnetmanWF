@@ -23,6 +23,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 my $flow_id = $cgi -> param('flow_id');
@@ -54,6 +55,9 @@ my $work_title = $access2db -> select_col1;
 
 my $download_file_name = 'Telnetman_'. &Common_sub::escape_filename($flow_title) . '_' . &Common_sub::escape_filename($work_title) . '_' . $type . '_' . (&Common_sub::YYYYMMDDhhmmss($time, 'YYYYMMDD-hhmmss'))[0] . '.zip';
 
+
+
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 

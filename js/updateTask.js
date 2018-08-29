@@ -33,11 +33,6 @@ function updateTask (){
   return("table_" + boxId);
  };
  
- // 選択中のbox の更新時刻の表示領域のid
- this.idUpdateTime = function (boxId){
-  return("span_update_time_" + boxId);
- };
- 
  // 選択中のbox のタイトルの表示領域のid
  this.idInputTitle = function (boxId){
   return("input_title_" + boxId);
@@ -118,6 +113,11 @@ function updateTask (){
  // 実行履歴の表示エリア
  this.idHistoryArea = "history_area";
  this.pos = 0;
+ 
+ // エラーメッセージエリアのid
+ this.idErrorMessage = function(boxId){
+  return("error_message_" + boxId);
+ };
  
  // ドロップされたパラメーターシートのファイル名と内容。
  this.parameterSheetFileName = "";
@@ -341,8 +341,6 @@ function updateTask (){
         objUpdateTask.existsParameterSheet = 0;
         objUpdateTask.existsFlowchartData  = 0;
         
-        title = objCommon.escapeHtml(title);
-        
         if("login_user" in hashResult){
          var loginUser = hashResult["login_user"];
          objControleStorageS.setLoginUser(loginUser);
@@ -351,48 +349,13 @@ function updateTask (){
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateTask.idTable(boxId));
         
-        var elTr0 = document.createElement("tr");
-        var elTd0 = document.createElement("td");
-        elTd0.setAttribute("colspan", 2);
-        elTd0.setAttribute("class", "center");
-        var elButton0 = document.createElement("button");
-        elButton0.setAttribute("id", objUpdateTask.idButtonExec(boxId));
-        elButton0.innerHTML = "start";
-        elTd0.appendChild(elButton0);
-        elTr0.appendChild(elTd0);
+        var elTr0 = objUpdateTask.makeExecButtonTr(boxId);
         
+        var elTr1 = objUpdateTask.makeUpdateTimeTr(boxId, updateTime);
+        elTable.appendChild(elTr1);
         
-        var elTr1    = document.createElement("tr");
-        var elTd11   = document.createElement("td");
-        var elTd12   = document.createElement("td");
-        var elSpan11 = document.createElement("span");
-        var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "最終スタート時刻";
-        if(updateTime !== 0){
-         elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
-        }
-        else{
-         elSpan12.innerHTML = "-"; 
-        }
-        elSpan12.setAttribute("id", objUpdateTask.idUpdateTime(boxId));
-        elTd11.appendChild(elSpan11);
-        elTd12.appendChild(elSpan12);
-        elTr1.appendChild(elTd11);
-        elTr1.appendChild(elTd12);
-        
-        
-        var elTr2    = document.createElement("tr");
-        var elTd21   = document.createElement("td");
-        var elTd22   = document.createElement("td");
-        var elSpan21 = document.createElement("span");
-        var elSpan22 = document.createElement("span");
-        elSpan21.innerHTML = "タイトル";
-        elSpan22.innerHTML = title;
-        elTd21.appendChild(elSpan21);
-        elTd22.appendChild(elSpan22);
-        elTr2.appendChild(elTd21);
-        elTr2.appendChild(elTd22);
-        
+        var elTr2 = objUpdateTask.makeTitleTr(title);
+        elTable.appendChild(elTr2);
         
         var elTr4    = document.createElement("tr");
         var elTd41   = document.createElement("td");
@@ -410,11 +373,8 @@ function updateTask (){
         elTd42.appendChild(elDiv42);
         elTr4.appendChild(elTd41);
         elTr4.appendChild(elTd42);
-        
-        
-        elTable.appendChild(elTr1);
-        elTable.appendChild(elTr2);
         elTable.appendChild(elTr4);
+        
         elTable.appendChild(elTr0);
         
         document.getElementById(objUpdateTask.idBoxDataArea).appendChild(elTable);
@@ -442,7 +402,6 @@ function updateTask (){
     }
    });
   }
-  
  };
  
  
@@ -686,101 +645,29 @@ function updateTask (){
         objUpdateTask.existsParameterSheet = existsParameterSheet;
         objUpdateTask.existsFlowchartData  = existsFlowchartData;
         
-        title       = objCommon.escapeHtml(title);
-        description = objCommon.convertHtml(description);
-        
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateTask.idTable(workId));
         
-        var elTr0 = document.createElement("tr");
-        var elTd0 = document.createElement("td");
-        elTd0.setAttribute("colspan", 2);
-        elTd0.setAttribute("class", "center");
-        var elButton0    = document.createElement("button");
-        elButton0.setAttribute("id", objUpdateTask.idButtonExec(workId));
-        elButton0.innerHTML = "exec";
-        var elButton1    = document.createElement("button");
-        elButton1.setAttribute("id", objUpdateTask.idButtonThrough(workId));
-        elButton1.innerHTML = "through";
-        elTd0.appendChild(elButton0);
-        elTd0.appendChild(elButton1);
-        elTr0.appendChild(elTd0);
+        var elTr0 = objUpdateTask.makeExecButtonTr(workId);
         
-        
-        var elTr1    = document.createElement("tr");
-        var elTd11   = document.createElement("td");
-        var elTd12   = document.createElement("td");
-        var elSpan11 = document.createElement("span");
-        var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "最終実行時刻";
-        if(updateTime !== 0){
-         elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
-        }
-        else{
-         elSpan12.innerHTML = "-"; 
-        }
-        elSpan12.setAttribute("id", objUpdateTask.idUpdateTime(workId));
-        elTd11.appendChild(elSpan11);
-        elTd12.appendChild(elSpan12);
-        elTr1.appendChild(elTd11);
-        elTr1.appendChild(elTd12);
-        
-        
-        var elTr2    = document.createElement("tr");
-        var elTd21   = document.createElement("td");
-        var elTd22   = document.createElement("td");
-        var elSpan21 = document.createElement("span");
-        var elSpan22 = document.createElement("span");
-        elSpan21.innerHTML = "タイトル";
-        elSpan22.innerHTML = title;
-        elTd21.appendChild(elSpan21);
-        elTd22.appendChild(elSpan22);
-        elTr2.appendChild(elTd21);
-        elTr2.appendChild(elTd22);
-        
-        
-        var elTr3    = document.createElement("tr");
-        var elTd31   = document.createElement("td");
-        var elTd32   = document.createElement("td");
-        var elSpan31 = document.createElement("span");
-        var elSpan32 = document.createElement("span");
-        elSpan31.innerHTML = "説明";
-        elSpan32.innerHTML = description;
-        elTd31.appendChild(elSpan31);
-        elTd32.appendChild(elSpan32);
-        elTr3.appendChild(elTd31);
-        elTr3.appendChild(elTd32);
-        
-        
+        var elTr1 = objUpdateTask.makeUpdateTimeTr(workId, updateTime);
         elTable.appendChild(elTr1);
+        
+        if(status === -1){
+         var elTr11 = objUpdateTask.makeErrorMessageTr(workId);
+         elTable.appendChild(elTr11);
+        }
+        
+        var elTr2 = objUpdateTask.makeTitleTr(title);
         elTable.appendChild(elTr2);
+        
+        var elTr3 = objUpdateTask.makeDescriptionTr(description);
         elTable.appendChild(elTr3);
         
         
         if(existsParameterSheet === 1){
-         var elTr8    = document.createElement("tr");
-         var elTd81   = document.createElement("td");
-         var elTd82   = document.createElement("td");
-         var elSpan81 = document.createElement("span");
-         var elSpan82 = document.createElement("span");
-         var elImg82  = document.createElement("img");
-         elSpan81.innerHTML = "パラメーターシート";
-         elSpan82.innerHTML = "Parameter Sheet";
-         elSpan82.setAttribute("class", "onclick_node parameter_sheet");
-         elSpan82.setAttribute("id", objUpdateTask.idTakeOverParameterSheet(workId));
-         elSpan82.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + workId + "', 0)");
-         elImg82.setAttribute("src", "img/cross.png");
-         elImg82.setAttribute("width", "16");
-         elImg82.setAttribute("height", "16");
-         elImg82.setAttribute("alt", "削除");
-         elImg82.setAttribute("class", "onclick_node");
-         elImg82.setAttribute("id", objUpdateTask.idDeleteParameterSheet(workId));
-         elImg82.onclick = new Function("objUpdateTask.deleteParameterSheet('" + workId + "');");
-         elTd81.appendChild(elSpan81);
-         elTd82.appendChild(elSpan82);
-         elTd82.appendChild(elImg82);
-         elTr8.appendChild(elTd81);
-         elTr8.appendChild(elTd82);
+         var elTr8 = objUpdateTask.makeParameterSheetTr(flowId, taskId, workId);
+         elTable.appendChild(elTr8);
          
          var elTr9    = document.createElement("tr");
          var elTd91   = document.createElement("td");
@@ -794,8 +681,6 @@ function updateTask (){
          elTd92.appendChild(elUl92);
          elTr9.appendChild(elTd91);
          elTr9.appendChild(elTd92);
-         
-         elTable.appendChild(elTr8);
          elTable.appendChild(elTr9);
         }
         
@@ -806,12 +691,7 @@ function updateTask (){
          
          var loginUser = "";
          var loginPassword = "";
-         if(hashResult["login_user"].length > 0){
-          loginUser     = hashResult["login_user"];
-          loginPassword = hashResult["login_password"];
-          objControleStorageS.setLoginPassword(loginUser, loginPassword);
-         }
-         else if("login_info_login_user" in hashResult){
+         if("login_info_login_user" in hashResult){
           loginUser     = hashResult["login_info_login_user"];
           loginPassword = objControleStorageS.getLoginPassword(loginUser);
          }
@@ -937,40 +817,7 @@ function updateTask (){
   var loginUser = document.getElementById(objUpdateTask.idInputLoginUser(workId)).value;
   var loginPassword = objControleStorageS.getLoginPassword(loginUser);
   document.getElementById(objUpdateTask.idInputLoginPassword(workId)).value = loginPassword;
- };
- 
- 
- 
- //
- // terminal で表示するノードリストを作る。
- //
- this.makeParameterSheetNodeList = function (flowId, taskId, boxId, nodeList){
-  var elUl = document.createElement("ul");
-  elUl.setAttribute("class", "node_list");
-  
-  for(var k = 0, l = nodeList.length; k < l; k ++){
-   node = nodeList[k];
-   
-   var elLi = document.createElement("li");
-   var elImg = document.createElement("img");
-   elImg.setAttribute("src", "img/file_extension_xls.png");
-   elImg.setAttribute("width", "16");
-   elImg.setAttribute("height", "16");
-   elImg.setAttribute("alt", "parameter sheet");
-   elImg.setAttribute("class", "onclick_node");
-   elImg.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + boxId + "', 0, '" + node + "')");
-   var elSpan = document.createElement("span");
-   elSpan.innerHTML = node;
-   
-   elLi.appendChild(elImg);
-   elLi.appendChild(elSpan);
-   
-   elUl.appendChild(elLi);
-  }
-  
-  return(elUl);
- };
- 
+ }; 
  
  
  //
@@ -1244,96 +1091,27 @@ function updateTask (){
         objUpdateTask.existsParameterSheet = existsParameterSheet;
         objUpdateTask.existsFlowchartData  = 0;
         
-        title       = objCommon.escapeHtml(title);
-        description = objCommon.convertHtml(description);
-        
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateTask.idTable(caseId));
         
-        var elTr0 = document.createElement("tr");
-        var elTd0 = document.createElement("td");
-        elTd0.setAttribute("colspan", 2);
-        elTd0.setAttribute("class", "center");
-        var elButton0    = document.createElement("button");
-        elButton0.setAttribute("id", objUpdateTask.idButtonExec(caseId));
-        elButton0.innerHTML = "exec";
-        elTd0.appendChild(elButton0);
-        elTr0.appendChild(elTd0);
+        var elTr0 = objUpdateTask.makeExecButtonTr(caseId);
         
-        
-        var elTr1    = document.createElement("tr");
-        var elTd11   = document.createElement("td");
-        var elTd12   = document.createElement("td");
-        var elSpan11 = document.createElement("span");
-        var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "最終実行時刻";
-        if(updateTime !== 0){
-         elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
-        }
-        else{
-         elSpan12.innerHTML = "-"; 
-        }
-        elSpan12.setAttribute("id", objUpdateTask.idUpdateTime(caseId));
-        elTd11.appendChild(elSpan11);
-        elTd12.appendChild(elSpan12);
-        elTr1.appendChild(elTd11);
-        elTr1.appendChild(elTd12);
-        
-        
-        var elTr2    = document.createElement("tr");
-        var elTd21   = document.createElement("td");
-        var elTd22   = document.createElement("td");
-        var elSpan21 = document.createElement("span");
-        var elSpan22 = document.createElement("span");
-        elSpan21.innerHTML = "タイトル";
-        elSpan22.innerHTML = title;
-        elTd21.appendChild(elSpan21);
-        elTd22.appendChild(elSpan22);
-        elTr2.appendChild(elTd21);
-        elTr2.appendChild(elTd22);
-        
-        
-        var elTr3    = document.createElement("tr");
-        var elTd31   = document.createElement("td");
-        var elTd32   = document.createElement("td");
-        var elSpan31 = document.createElement("span");
-        var elSpan32 = document.createElement("span");
-        elSpan31.innerHTML = "説明";
-        elSpan32.innerHTML = description;
-        elTd31.appendChild(elSpan31);
-        elTd32.appendChild(elSpan32);
-        elTr3.appendChild(elTd31);
-        elTr3.appendChild(elTd32);
-        
-                 
+        var elTr1 = objUpdateTask.makeUpdateTimeTr(caseId, updateTime);
         elTable.appendChild(elTr1);
+        
+        if(status === -1){
+         var elTr11 = objUpdateTask.makeErrorMessageTr(caseId);
+         elTable.appendChild(elTr11);
+        }
+        
+        var elTr2 = objUpdateTask.makeTitleTr(title);
         elTable.appendChild(elTr2);
+        
+        var elTr3 = objUpdateTask.makeDescriptionTr(description);
         elTable.appendChild(elTr3);
-
+        
         if(existsParameterSheet === 1){
-         var elTr8    = document.createElement("tr");
-         var elTd81   = document.createElement("td");
-         var elTd82   = document.createElement("td");
-         var elSpan81 = document.createElement("span");
-         var elSpan82 = document.createElement("span");
-         var elImg82 = document.createElement("img");
-         elSpan81.innerHTML = "パラメーターシート";
-         elSpan82.innerHTML = "Parameter Sheet";
-         elSpan82.setAttribute("class", "onclick_node parameter_sheet");
-         elSpan82.setAttribute("id", objUpdateTask.idTakeOverParameterSheet(caseId));
-         elSpan82.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + caseId + "', 0)");
-         elImg82.setAttribute("src", "img/cross.png");
-         elImg82.setAttribute("width", "16");
-         elImg82.setAttribute("height", "16");
-         elImg82.setAttribute("alt", "削除");
-         elImg82.setAttribute("id", objUpdateTask.idDeleteParameterSheet(caseId));
-         elImg82.setAttribute("class", "onclick_node");
-         elImg82.onclick = new Function("objUpdateTask.deleteParameterSheet('" + caseId + "');");
-         elTd81.appendChild(elSpan81);
-         elTd82.appendChild(elSpan82);
-         elTd82.appendChild(elImg82);
-         elTr8.appendChild(elTd81);
-         elTr8.appendChild(elTd82);
+         var elTr8 = objUpdateTask.makeParameterSheetTr(flowId, taskId, caseId);
          elTable.appendChild(elTr8);
         }
 
@@ -1368,6 +1146,219 @@ function updateTask (){
  };
  
  
+ //
+ // 実行ボタンtr を作成
+ //
+ this.makeExecButtonTr = function (boxId){
+  var caption = "exec";
+  
+  if(boxId.match(/^start_/)){
+   caption = "start";
+  }
+  
+  var elTr0 = document.createElement("tr");
+  var elTd0 = document.createElement("td");
+  elTd0.setAttribute("colspan", 2);
+  elTd0.className = "center";
+  var elButton0   = document.createElement("button");
+  elButton0.setAttribute("id", this.idButtonExec(boxId));
+  elButton0.innerHTML = caption;
+  elTd0.appendChild(elButton0);
+  
+  if(boxId.match(/^work_/)){
+   var elButton1  = document.createElement("button");
+   elButton1.setAttribute("id", this.idButtonThrough(boxId));
+   elButton1.innerHTML = "through";
+   elTd0.appendChild(elButton1);
+  }
+  
+  elTr0.appendChild(elTd0);
+  
+  return(elTr0);
+ };
+ 
+ 
+ //
+ // 最終実行時刻のtr を作成。
+ //
+ this.makeUpdateTimeTr = function (boxId, updateTime){
+  var caption = "更新時刻";
+  
+  if(boxId.match(/^work_/) || boxId.match(/^case_/)){
+   caption = "最終実行時刻";
+  }
+  else if(boxId.match(/^start_/)){
+   caption = "最終スタート時刻";
+  }
+  
+  var elTr1    = document.createElement("tr");
+  var elTd11   = document.createElement("td");
+  var elTd12   = document.createElement("td");
+  var elSpan11 = document.createElement("span");
+  var elSpan12 = document.createElement("span");
+  elSpan11.innerHTML = caption;
+  if(updateTime !== 0){
+   elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
+  }
+  else{
+   elSpan12.innerHTML = "-"; 
+  }
+  elTd11.appendChild(elSpan11);
+  elTd12.appendChild(elSpan12);
+  elTr1.appendChild(elTd11);
+  elTr1.appendChild(elTd12);
+  
+  return(elTr1);
+ };
+ 
+ 
+ //
+ // タイトルのtr を作成。
+ //
+ this.makeTitleTr = function (title){
+  title = objCommon.escapeHtml(title);
+  
+  var elTr2    = document.createElement("tr");
+  var elTd21   = document.createElement("td");
+  var elTd22   = document.createElement("td");
+  var elSpan21 = document.createElement("span");
+  var elSpan22 = document.createElement("span");
+  elSpan21.innerHTML = "タイトル";
+  elSpan22.innerHTML = title;
+  elTd21.appendChild(elSpan21);
+  elTd22.appendChild(elSpan22);
+  elTr2.appendChild(elTd21);
+  elTr2.appendChild(elTd22);
+  
+  return(elTr2);
+ };
+ 
+ 
+ //
+ // 説明のtr を作成。
+ //
+ this.makeDescriptionTr = function (description){
+  description = objCommon.escapeHtml(description);
+  description = objCommon.convertHtml(description);
+  
+  var elTr3    = document.createElement("tr");
+  var elTd31   = document.createElement("td");
+  var elTd32   = document.createElement("td");
+  var elSpan31 = document.createElement("span");
+  var elSpan32 = document.createElement("span");
+  elSpan31.innerHTML = "説明";
+  elSpan32.innerHTML = description;
+  elTd31.appendChild(elSpan31);
+  elTd32.appendChild(elSpan32);
+  elTr3.appendChild(elTd31);
+  elTr3.appendChild(elTd32);
+  
+  return(elTr3);
+ };
+ 
+ 
+ //
+ // エラーメッセージtr を作成
+ //
+ this.makeErrorMessageTr = function (boxId){
+  var elTr11    = document.createElement("tr");
+  var elTd111   = document.createElement("td");
+  var elTd112   = document.createElement("td");
+  var elImg111  = document.createElement("img");
+  var elSpan112 = document.createElement("span");
+  elTd111.className = "center";
+  elImg111.setAttribute("src", "img/error.png");
+  elImg111.setAttribute("width", "16");
+  elImg111.setAttribute("height", "16");
+  elImg111.setAttribute("alt", "error");
+  elSpan112.setAttribute("id", this.idErrorMessage(boxId));
+  elTd111.appendChild(elImg111);
+  elTd112.appendChild(elSpan112);
+  elTr11.appendChild(elTd111);
+  elTr11.appendChild(elTd112);
+  
+  return(elTr11);
+ };
+ 
+ 
+ //
+ // パラメーターシートのダウンロード、削除ボタンのtr の作成。
+ //
+ this.makeParameterSheetTr = function (flowId, taskId, boxId){
+  var elTr8    = document.createElement("tr");
+  var elTd81   = document.createElement("td");
+  var elTd82   = document.createElement("td");
+  var elSpan81 = document.createElement("span");
+  var elSpan82 = document.createElement("span");
+  elSpan81.innerHTML = "パラメーターシート";
+  elSpan82.innerHTML = "Parameter Sheet";
+  elSpan82.className = "onclick_node parameter_sheet";
+  elSpan82.setAttribute("id", this.idTakeOverParameterSheet(boxId));
+  elSpan82.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + boxId + "', 0)");
+  
+  elTd81.appendChild(elSpan81);
+  elTd82.appendChild(elSpan82);
+  
+  if(boxId.match(/^work_/) || boxId.match(/^case_/)){
+   var elImg82  = document.createElement("img");
+   elImg82.setAttribute("src", "img/cross.png");
+   elImg82.setAttribute("width", "16");
+   elImg82.setAttribute("height", "16");
+   elImg82.setAttribute("alt", "削除");
+   elImg82.className = "onclick_node";
+   elImg82.setAttribute("id", this.idDeleteParameterSheet(boxId));
+   elImg82.onclick = new Function("objUpdateTask.deleteParameterSheet('" + boxId + "');");
+   elTd82.appendChild(elImg82);
+  }
+  
+  elTr8.appendChild(elTd81);
+  elTr8.appendChild(elTd82);
+  
+  return(elTr8);
+ };
+ 
+ 
+ //
+ // terminal, goal のノードリストのtr を作成。
+ //
+ this.makeNodeListTr = function (flowId, taskId, boxId, nodeList){
+  var elTr9    = document.createElement("tr");
+  var elTd91   = document.createElement("td");
+  var elTd92   = document.createElement("td");
+  var elSpan91 = document.createElement("span");
+  
+  var elUl92 = document.createElement("ul");
+  elUl92.className = "node_list";
+  
+  for(var k = 0, l = nodeList.length; k < l; k ++){
+   node = nodeList[k];
+   
+   var elLi = document.createElement("li");
+   var elImg = document.createElement("img");
+   elImg.setAttribute("src", "img/file_extension_xls.png");
+   elImg.setAttribute("width", "16");
+   elImg.setAttribute("height", "16");
+   elImg.setAttribute("alt", "parameter sheet");
+   elImg.className = "onclick_node";
+   elImg.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + boxId + "', 0, '" + node + "')");
+   var elSpan = document.createElement("span");
+   elSpan.innerHTML = node;
+   
+   elLi.appendChild(elImg);
+   elLi.appendChild(elSpan);
+   
+   elUl92.appendChild(elLi);
+  }
+  
+  elSpan91.innerHTML = "ノード一覧";
+  elTd91.appendChild(elSpan91);
+  elTd92.appendChild(elUl92);
+  elTr9.appendChild(elTd91);
+  elTr9.appendChild(elTd92);
+  
+  return(elTr9);
+ };
+ 
  
  //
  // work, case のstatus を確認して次の動きを決定する。
@@ -1377,7 +1368,12 @@ function updateTask (){
    this.unlock(boxId, existsParameterSheet, existsFlowchartData);
   }
   else if(status === -1){
-   alert(errorMessage);
+   var elSpanErrorMessage = document.getElementById(this.idErrorMessage(boxId));
+   
+   if(elSpanErrorMessage !== null){
+    elSpanErrorMessage.innerHTML = objCommon.escapeHtml(errorMessage);
+   }
+   
    this.unlock(boxId, existsParameterSheet, existsFlowchartData);
   }
   else{
@@ -1499,95 +1495,24 @@ function updateTask (){
         objUpdateTask.existsParameterSheet = existsParameterSheet;
         objUpdateTask.existsFlowchartData  = 0;
         
-        title       = objCommon.escapeHtml(title);
-        description = objCommon.convertHtml(description);
-        
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateTask.idTable(terminalId));
         
-        
-        var elTr1    = document.createElement("tr");
-        var elTd11   = document.createElement("td");
-        var elTd12   = document.createElement("td");
-        var elSpan11 = document.createElement("span");
-        var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "更新時刻";
-        if(updateTime !== 0){
-         elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
-        }
-        else{
-         elSpan12.innerHTML = "-"; 
-        }
-        elSpan12.setAttribute("id", objUpdateTask.idUpdateTime(terminalId));
-        elTd11.appendChild(elSpan11);
-        elTd12.appendChild(elSpan12);
-        elTr1.appendChild(elTd11);
-        elTr1.appendChild(elTd12);
-        
-        
-        var elTr2    = document.createElement("tr");
-        var elTd21   = document.createElement("td");
-        var elTd22   = document.createElement("td");
-        var elSpan21 = document.createElement("span");
-        var elSpan22 = document.createElement("span");
-        elSpan21.innerHTML = "タイトル";
-        elSpan22.innerHTML = title;
-        elTd21.appendChild(elSpan21);
-        elTd22.appendChild(elSpan22);
-        elTr2.appendChild(elTd21);
-        elTr2.appendChild(elTd22);
-        
-        
-        var elTr3    = document.createElement("tr");
-        var elTd31   = document.createElement("td");
-        var elTd32   = document.createElement("td");
-        var elSpan31 = document.createElement("span");
-        var elSpan32 = document.createElement("span");
-        elSpan31.innerHTML = "説明";
-        elSpan32.innerHTML = description;
-        elTd31.appendChild(elSpan31);
-        elTd32.appendChild(elSpan32);
-        elTr3.appendChild(elTd31);
-        elTr3.appendChild(elTd32);
-                 
-        
+        var elTr1 = objUpdateTask.makeUpdateTimeTr(terminalId, updateTime);
         elTable.appendChild(elTr1);
+        
+        var elTr2 = objUpdateTask.makeTitleTr(title);
         elTable.appendChild(elTr2);
+        
+        var elTr3 = objUpdateTask.makeDescriptionTr(description);
         elTable.appendChild(elTr3);
         
-        
         if(existsParameterSheet === 1){
-         var elTr8   = document.createElement("tr");
-         var elTd81   = document.createElement("td");
-         var elTd82   = document.createElement("td");
-         var elSpan81 = document.createElement("span");
-         var elSpan82 = document.createElement("span");
-         elSpan81.innerHTML = "パラメーターシート";
-         elSpan82.innerHTML = "Parameter Sheet";
-         elSpan82.setAttribute("class", "onclick_node  parameter_sheet");
-         elSpan82.setAttribute("id", objUpdateTask.idTakeOverParameterSheet(terminalId));
-         elSpan82.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + terminalId + "', 0)");
-         elTd81.appendChild(elSpan81);
-         elTd82.appendChild(elSpan82);
-         elTr8.appendChild(elTd81);
-         elTr8.appendChild(elTd82);
-         
+         var elTr8 = objUpdateTask.makeParameterSheetTr(flowId, taskId, terminalId);
          elTable.appendChild(elTr8);
          
-         
          var nodeList = hashResult["node_list"];
-         
-         var elTr9    = document.createElement("tr");
-         var elTd91   = document.createElement("td");
-         var elTd92   = document.createElement("td");
-         var elSpan91 = document.createElement("span");
-         var elUl92 = objUpdateTask.makeParameterSheetNodeList(flowId, taskId, terminalId, nodeList);
-         elSpan91.innerHTML = "ノード一覧";
-         elTd91.appendChild(elSpan91);
-         elTd92.appendChild(elUl92);
-         elTr9.appendChild(elTd91);
-         elTr9.appendChild(elTd92);
-         
+         var elTr9 = objUpdateTask.makeNodeListTr(flowId, taskId, terminalId, nodeList);
          elTable.appendChild(elTr9);
         }
     
@@ -2037,6 +1962,7 @@ function updateTask (){
           objUpdateTask.intervalId = null;
           
           objUpdateTask.addHistory(pos, historyLog);
+          objUpdateTask.pos = 0;
           objUpdateTask.viewBoxData(result, boxId, autoExecBoxId, status, errorMessage, emptyBoxIdList, fillBoxIdList, existsParameterSheet, existsFlowchartData, forceStop);
          }
          else{// 継続中のとき
@@ -2238,63 +2164,17 @@ function updateTask (){
         var elTable = document.createElement("table");
         elTable.setAttribute("id", objUpdateTask.idTable(boxId));
         
-        var elTr1    = document.createElement("tr");
-        var elTd11   = document.createElement("td");
-        var elTd12   = document.createElement("td");
-        var elSpan11 = document.createElement("span");
-        var elSpan12 = document.createElement("span");
-        elSpan11.innerHTML = "更新時刻";
-        if(updateTime !== 0){
-         elSpan12.innerHTML = objCommon.unixtimeToDate(updateTime, "YYYY/MM/DD hh:mm:ss");
-        }
-        else{
-         elSpan12.innerHTML = "-"; 
-        }
-        elSpan12.setAttribute("id", objUpdateTask.idUpdateTime(boxId));
-        elTd11.appendChild(elSpan11);
-        elTd12.appendChild(elSpan12);
-        elTr1.appendChild(elTd11);
-        elTr1.appendChild(elTd12);
-        
-        
-        elTable.appendChild(elTr1);
-        
+        var elTr1 = objUpdateTask.makeUpdateTimeTr(boxId, updateTime);
+        elTable.appendChild(elTr1);        
         
         if(existsParameterSheet === 1){
-         var elTr8   = document.createElement("tr");
-         var elTd81   = document.createElement("td");
-         var elTd82   = document.createElement("td");
-         var elSpan81 = document.createElement("span");
-         var elSpan82 = document.createElement("span");
-         elSpan81.innerHTML = "パラメーターシート";
-         elSpan82.innerHTML = "Parameter Sheet";
-         elSpan82.setAttribute("class", "onclick_node  parameter_sheet");
-         elSpan82.setAttribute("id", objUpdateTask.idTakeOverParameterSheet(boxId));
-         elSpan82.onclick = new Function("objUpdateTask.getParameterSheet('" + flowId + "','" + taskId + "','" + boxId + "', 0)");
-         elTd81.appendChild(elSpan81);
-         elTd82.appendChild(elSpan82);
-         elTr8.appendChild(elTd81);
-         elTr8.appendChild(elTd82);
-         
+         var elTr8 = objUpdateTask.makeParameterSheetTr(flowId, taskId, boxId);
          elTable.appendChild(elTr8);
          
-         
          var nodeList = hashResult["node_list"];
-         
-         var elTr9    = document.createElement("tr");
-         var elTd91   = document.createElement("td");
-         var elTd92   = document.createElement("td");
-         var elSpan91 = document.createElement("span");
-         var elUl92 = objUpdateTask.makeParameterSheetNodeList(flowId, taskId, boxId, nodeList);
-         elSpan91.innerHTML = "ノード一覧";
-         elTd91.appendChild(elSpan91);
-         elTd92.appendChild(elUl92);
-         elTr9.appendChild(elTd91);
-         elTr9.appendChild(elTd92);
-         
+         var elTr9 = objUpdateTask.makeNodeListTr(flowId, taskId, boxId, nodeList);
          elTable.appendChild(elTr9);
         }
-        
         
         document.getElementById(objUpdateTask.idBoxDataArea).appendChild(elTable);
         

@@ -23,6 +23,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -42,6 +43,7 @@ if($ref_auth -> {'result'} == 0){
  exit(0);
 }
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 my $flow_id = $ref_auth -> {'flow_id'};

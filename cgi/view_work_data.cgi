@@ -27,6 +27,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -41,8 +42,8 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
- 
  exit(0);
 }
 
@@ -58,7 +59,7 @@ my $work_id = $cgi -> param('work_id');
 #
 # work data を取り出す。
 #
-my $select_column = 'vcWorkTitle,vcWorkDescription,iExecOnlyOne,vcUser,vcPassword';
+my $select_column = 'vcWorkTitle,vcWorkDescription,iExecOnlyOne';
 my $table         = 'T_Work';
 my $condition     = "where vcFlowId = '" . $flow_id . "' and vcWorkId = '" . $work_id . "'";
 $access2db -> set_select($select_column, $table, $condition);
@@ -90,6 +91,8 @@ my $login_info = $access2db -> select_col1;
 my $exists_flowchart_data = &TelnetmanWF_common::exists_flowchart_data($access2db, $flow_id, $work_id);
 
 
+
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 
@@ -97,8 +100,6 @@ $access2db -> close;
 my $title          = $ref_work -> [0];
 my $description    = $ref_work -> [1];
 my $exec_only_one  = $ref_work -> [2];
-my $login_user     = $ref_work -> [3];
-my $login_password = $ref_work -> [4];
 
 $exec_only_one += 0;
 
@@ -125,8 +126,6 @@ my %results = (
  'exec_only_one'          => $exec_only_one,
  'exists_flowchart_data'  => $exists_flowchart_data,
  'exists_parameter_sheet' => $exists_parameter_sheet,
- 'login_user'             => $login_user,
- 'login_password'         => $login_password,
  'status'                 => $status,
  'error_message'          => $error_message,
  'update_time'            => $update_time

@@ -118,6 +118,10 @@ ADD ./install/TelnetmanWF.cron /etc/cron.d/TelnetmanWF.cron
 RUN chmod 644 /etc/cron.d/TelnetmanWF.cron
 
 
+# Logrotate 
+ADD ./install/TelnetmanWF.logrotate.txt /etc/logrotate.d/TelnetmanWF
+
+
 EXPOSE 9443
 
 

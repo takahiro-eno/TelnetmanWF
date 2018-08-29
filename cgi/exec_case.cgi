@@ -26,6 +26,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -40,6 +41,7 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  
  exit(0);
@@ -59,6 +61,7 @@ if(defined($exist_running_work) && ($exist_running_work == 1)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"現在実行中のタスクです。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  exit(0);
 }
@@ -70,6 +73,7 @@ if(defined($check_status) && ($check_status == 1)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"現在実行中のタスクです。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  exit(0);
 }
@@ -102,6 +106,7 @@ my ($ref_empty_box_id_list, $ref_fill_box_id_list) = &TelnetmanWF_common::make_b
 
 
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 

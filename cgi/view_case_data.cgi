@@ -24,6 +24,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -38,8 +39,8 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
- 
  exit(0);
 }
 
@@ -69,7 +70,7 @@ my $ref_case = $access2db -> select_cols;
 my ($status, $error_message, $update_time) = &TelnetmanWF_common::check_case_status($access2db, $flow_id, $task_id, $case_id);
 
 
-
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 

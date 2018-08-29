@@ -36,6 +36,7 @@ sub access2Telnetman {
  }
  
  my $ua  = LWP::UserAgent -> new(ssl_opts => {verify_hostname => 0});
+ $ua -> timeout(10);
  $ua -> default_header('telnetmanAuth' => 'Telnetman ' . $header1 . ' ' . $header2);
  
  my $request = &HTTP::Request::Common::POST(
@@ -73,6 +74,7 @@ sub access2TelnetmanText {
  }
  
  my $ua  = LWP::UserAgent -> new(ssl_opts => {verify_hostname => 0});
+ $ua -> timeout(10);
  $ua -> default_header('telnetmanAuth' => 'Telnetman ' . $header1 . ' ' . $header2);
  
  my $request = &HTTP::Request::Common::POST(
@@ -1219,7 +1221,7 @@ sub write_history {
  }
  
  my $csv_node_list = '';
- if(defined($csv_node_list)){
+ if(defined($ref_node_list)){
   $csv_node_list = ' ' . join(',', @$ref_node_list);
  }
  
@@ -1240,5 +1242,27 @@ sub write_history {
   chown(48, 48, $file_history_log);
  }
 }
+
+
+#
+# ログの行頭部分
+#
+sub prefix_log {
+ my $user_id = $_[0];
+
+ unless(defined($user_id)){
+  $user_id = '';
+ }
+
+ my $time = time;
+ my ($date_time) = &Common_sub::YYYYMMDDhhmmss($time);
+
+ my $script_path = $0;
+ my $pos = rindex($script_path, '/');
+ my $script_name = substr($script_path, $pos + 1);
+
+ return($date_time . ' ' . $user_id . ' ' . $script_name . ' : ');
+}
+
 
 1;

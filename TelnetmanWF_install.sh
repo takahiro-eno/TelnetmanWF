@@ -112,6 +112,10 @@ firewall-cmd --zone=public --add-service=https --permanent
 firewall-cmd --zone=public --remove-service=dhcpv6-client --permanent
 
 
+# Logrotate 
+mv ./install/TelnetmanWF.logrotate.txt /etc/logrotate.d/TelnetmanWF
+
+
 # Disable SELinux
 sed -i -e 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
 

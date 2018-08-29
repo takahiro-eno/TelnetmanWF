@@ -34,6 +34,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -48,6 +49,7 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  
  exit(0);
@@ -78,6 +80,7 @@ unless(defined($user) && (length($user) > 0)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"ログインID がありません。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  exit(0);
 }
@@ -86,6 +89,7 @@ unless(defined($password) && (length($password) > 0)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"ログインPassword がありません。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log($user));
  $access2db -> close;
  exit(0);
 }
@@ -106,6 +110,7 @@ unless(defined($telnetman_user) && (length($telnetman_user) > 0)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"Telnetman ログインID がありません。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log($user));
  $access2db -> close;
  exit(0);
 }
@@ -114,6 +119,7 @@ unless(defined($telnetman_password) && (length($telnetman_password) > 0)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"Telnetman ログインPassword がありません。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log($user));
  $access2db -> close;
  exit(0);
 }
@@ -128,6 +134,7 @@ if(defined($exist_running_work) && ($exist_running_work == 1)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"現在実行中のタスクです。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log($user));
  $access2db -> close;
  exit(0);
 }
@@ -139,6 +146,7 @@ if(defined($check_status) && ($check_status == 1)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"現在実行中のタスクです。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log($user));
  $access2db -> close;
  exit(0);
 }
@@ -156,6 +164,7 @@ my $auto_exec_box_id = $work_id;
 my ($ref_empty_box_id_list, $ref_fill_box_id_list) = &TelnetmanWF_common::make_box_id_list($access2db, $flow_id, $task_id);
 
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log($user));
 $access2db -> close;
 
 

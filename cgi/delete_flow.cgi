@@ -25,6 +25,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -57,6 +58,7 @@ if($exist_running_work == 1){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"実行中のタスクがあります。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  exit(0);
 }
@@ -89,6 +91,7 @@ $access2db -> delete_exe;
 
 
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 

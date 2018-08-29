@@ -26,6 +26,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -40,8 +41,8 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
- 
  exit(0);
 }
 
@@ -221,20 +222,21 @@ while(my ($terminal_id, $ref_terminal_data) = each(%$terminal_list)){
  my $count = $access2db -> update_exe;
 }
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 my $ref_link_label_list      = &JSON::from_json($json_link_label_list);
 my $ref_parameter_conditions = &JSON::from_json($json_parameter_conditions);
 
 my %results = (
- 'result' => 1,
- 'flow_id' => $flow_id,
- 'case_id' => $case_id,
- 'case_title' => $case_title,
- 'link_label_list' => $ref_link_label_list,
+ 'result'               => 1,
+ 'flow_id'              => $flow_id,
+ 'case_id'              => $case_id,
+ 'case_title'           => $case_title,
+ 'link_label_list'      => $ref_link_label_list,
  'parameter_conditions' => $ref_parameter_conditions,
- 'update_time' => $time,
- 'next_box_id' => $next_box_id
+ 'update_time'          => $time,
+ 'next_box_id'          => $next_box_id
 );
 
 my $json_results = &JSON::to_json(\%results);

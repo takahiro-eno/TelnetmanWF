@@ -25,6 +25,7 @@ my $cgi = new CGI;
 my ($DB_name, $DB_host, $DB_user, $DB_password) = &Common_system::DB_connect_parameter();
 my @DB_connect_parameter_list                   = ('dbi:mysql:' . $DB_name . ':' . $DB_host, $DB_user, $DB_password);
 my $access2db                                   = Access2DB -> open(@DB_connect_parameter_list);
+$access2db -> log_file(&Common_system::file_sql_log());
 
 
 
@@ -39,8 +40,8 @@ if($ref_auth -> {'result'} == 0){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
- 
  exit(0);
 }
 
@@ -59,6 +60,7 @@ unless(defined($work_id) && (length($work_id) > 0)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print '{"result":0,"reason":"Work ID がありません。"}';
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  exit(0);
 }
@@ -103,6 +105,7 @@ if((scalar(@$ref_through_node_list) == 0) || ($exists_parameter_sheet == 0)){
  print "Content-type: text/plain; charset=UTF-8\n\n";
  print $json_results;
  
+ $access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
  $access2db -> close;
  exit(0);
 }
@@ -179,6 +182,7 @@ my ($ref_empty_box_id_list, $ref_fill_box_id_list) = &TelnetmanWF_common::make_b
 
 
 
+$access2db -> write_log(&TelnetmanWF_common::prefix_log('root'));
 $access2db -> close;
 
 
