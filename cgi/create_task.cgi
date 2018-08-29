@@ -14,6 +14,7 @@ use lib '/usr/local/TelnetmanWF/lib';
 use Common_system;
 use Common_sub;
 use Access2DB;
+use TelnetmanWF_common;
 
 
 my $time = time;
