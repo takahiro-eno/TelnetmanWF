@@ -108,8 +108,7 @@ chown root:root /etc/cron.d/TelnetmanWF.cron
 
 
 # Firewalld
-firewall-cmd --zone=public --add-service=https --permanent
-firewall-cmd --zone=public --remove-service=dhcpv6-client --permanent
+firewall-cmd --add-service=https --permanent
 
 
 # Logrotate 

@@ -6,9 +6,9 @@ services:
    - telnetman2
   build: "./TelnetmanWF"
   ports:
-   - "9443:9443"
+   - "9443:443"
  
  telnetman2:
   build: "./Telnetman2"
   ports:
-   - "8443:8443"
+   - "8443:443"
