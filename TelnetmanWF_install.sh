@@ -64,11 +64,22 @@ sed -i -e '/ErrorDocument 403/s/^/#/' /etc/httpd/conf.d/welcome.conf
 
 
 # SSL
-openssl genrsa 2048 > server.key
-echo -e "JP\n\n\n\n\nTelnetmanWF\n\n\n" | openssl req -new -key server.key > server.csr
-openssl x509 -days 3650 -req -signkey server.key < server.csr > server.crt
-mv server.crt /etc/httpd/conf/ssl.crt
-mv server.key /etc/httpd/conf/ssl.key
+sed -i -e "\$a[SAN]\nsubjectAltName='DNS:telnetman" /etc/pki/tls/openssl.cnf
+openssl req \
+ -newkey rsa:2048 \
+ -days 3650 \
+ -nodes \
+ -x509 \
+ -subj "/C=JP/ST=/L=/O=/OU=/CN=telnetman" \
+ -extensions SAN \
+ -reqexts SAN \
+ -config /etc/pki/tls/openssl.cnf \
+ -keyout /etc/pki/tls/private/server.key \
+ -out /etc/pki/tls/certs/server.crt
+chmod 600 /etc/pki/tls/private/server.key
+chmod 600 /etc/pki/tls/certs/server.crt
+sed -i -e 's/localhost\.key/server.key/' /etc/httpd/conf.d/ssl.conf
+sed -i -e 's/localhost\.crt/server.crt/' /etc/httpd/conf.d/ssl.conf
 
 
 # Directories & Files
