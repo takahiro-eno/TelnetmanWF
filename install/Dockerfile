@@ -1,5 +1,3 @@
-# For Openshift
-
 FROM centos:7
 
 MAINTAINER telnetman
@@ -8,6 +6,7 @@ RUN yum -y update
 
 RUN yum -y install telnet \
  mlocate \
+ cronie \
  traceroute \
  tcpdump \
  wget \
@@ -46,8 +45,12 @@ RUN echo q | /usr/bin/perl -MCPAN -e shell && \
 RUN \cp -f /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
 
+# PAM
+RUN sed -i -e '/pam_loginuid.so/s/^/#/' /etc/pam.d/crond
+
+
 # Copy startup script
-ADD ./install/start_openshift.sh /sbin/start.sh
+ADD ./install/start.sh /sbin/start.sh
 RUN chmod 755 /sbin/start.sh
 
 
@@ -57,6 +60,7 @@ RUN sed -i -e 's/\[mysqld\]/\[mysqld\]\ncharacter-set-server = utf8\nskip-charac
     chmod 700 /var/lib/mysql/TelnetmanWF && \
     chown mysql:mysql /var/lib/mysql/TelnetmanWF
 ADD ./install/TelnetmanWF_Docker.sql /root/TelnetmanWF.sql
+VOLUME /var/lib/mysql/TelnetmanWF
 
 
 # Apache
@@ -64,7 +68,6 @@ RUN sed -i -e 's/Options Indexes FollowSymLinks/Options MultiViews FollowSymLink
     sed -i -e 's/Options None/Options ExecCGI/' /etc/httpd/conf/httpd.conf && \
     sed -i -e 's/#AddHandler cgi-script \.cgi/AddHandler cgi-script .cgi/' /etc/httpd/conf/httpd.conf && \
     sed -i -e 's/DirectoryIndex index\.html/DirectoryIndex index.html index.cgi/' /etc/httpd/conf/httpd.conf && \
-    sed -i -e 's/80/8080/g' /etc/httpd/conf/httpd.conf && \
     sed -i -e '/ErrorDocument 403/s/^/#/' /etc/httpd/conf.d/welcome.conf && \
     sed -i -e 's/<Directory "\/var\/www\/html">/<Directory "\/var\/www\/html">\n    RewriteEngine on\n    RewriteBase \/\n    RewriteRule ^$ TelnetmanWF\/index.html [L]\n    RewriteCond %{REQUEST_FILENAME} !-f\n    RewriteCond %{REQUEST_FILENAME} !-d\n    RewriteRule ^(.+)$ TelnetmanWF\/$1 [L]\n/' /etc/httpd/conf/httpd.conf
 
@@ -85,8 +88,7 @@ RUN sed -i -e "\$a[SAN]\nsubjectAltName='DNS:telnetman" /etc/pki/tls/openssl.cnf
     chmod 644 /etc/pki/tls/private/server.key && \
     chmod 644 /etc/pki/tls/certs/server.crt && \
     sed -i -e 's/localhost\.key/server.key/' /etc/httpd/conf.d/ssl.conf && \
-    sed -i -e 's/localhost\.crt/server.crt/' /etc/httpd/conf.d/ssl.conf && \
-    sed -i -e 's/443/8443/g' /etc/httpd/conf.d/ssl.conf
+    sed -i -e 's/localhost\.crt/server.crt/' /etc/httpd/conf.d/ssl.conf
 
 
 # Directories & Files
@@ -114,32 +116,25 @@ RUN chmod 755 /var/www/cgi-bin/TelnetmanWF/* && \
     chown -R apache:apache /var/www/html/TelnetmanWF && \
     chown -R apache:apache /var/www/cgi-bin/TelnetmanWF && \
     chown -R apache:apache /var/TelnetmanWF
+VOLUME /var/TelnetmanWF/data
+VOLUME /var/TelnetmanWF/log
 
 
 # Update Source Code
 RUN sed -i -e "s/'telnetman', 'tcpport23'/'root', ''/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
-    sed -i -e "s/192\.168\.203\.96/telnetman2/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
-    sed -i -e "s/:443/:8443/" /usr/local/TelnetmanWF/lib/TelnetmanWF_common.pm
+    sed -i -e "s/192\.168\.203\.96/telnetman2/" /usr/local/TelnetmanWF/lib/Common_system.pm
+
+
+# Cron
+ADD ./install/TelnetmanWF.cron /etc/cron.d/TelnetmanWF.cron
+RUN chmod 644 /etc/cron.d/TelnetmanWF.cron
 
 
 # Logrotate 
 ADD ./install/TelnetmanWF.logrotate.txt /etc/logrotate.d/TelnetmanWF
 
 
-# permissions for root group
-RUN chgrp -R 0   /run && \
-    chmod -R g=u /run && \
-    chgrp -R 0   /var/log/mariadb && \
-    chmod -R g=u /var/log/mariadb && \
-    chgrp -R 0   /var/log/httpd && \
-    chmod -R g=u /var/log/httpd && \
-    chgrp -R 0   /var/lib/mysql && \
-    chmod -R g=u /var/lib/mysql && \
-    chgrp -R 0   /var/TelnetmanWF && \
-    chmod -R g=u /var/TelnetmanWF
-
-
-EXPOSE 8443
+EXPOSE 443
 
 
 CMD ["/sbin/start.sh"]

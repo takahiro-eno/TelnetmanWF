@@ -1,7 +1,7 @@
 version: '2'
 
 services:
- telnetman-wf:
+ telnetmanwf:
   depends_on:
    - telnetman2
   build: "./TelnetmanWF"
