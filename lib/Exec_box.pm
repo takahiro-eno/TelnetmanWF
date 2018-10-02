@@ -2,6 +2,7 @@
 # 説明   : Work, Case 実行に関する共通サブルーチン。
 # 作成者 : 江野高広
 # 作成日 : 2018/07/20
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -340,7 +341,8 @@ sub move_exec_parameter_sheet {
  my $dir_old_log = &Common_system::dir_old_log($flow_id, $task_id, $work_id, $time);
 
  unless(-d $dir_old_log){
-  mkdir($dir_old_log, 0755);
+  umask(0002);
+  mkdir($dir_old_log, 0775);
   
   if($< == 0){
    chown(48, 48, $dir_old_log);
@@ -405,7 +407,8 @@ sub end_of_telnet {
   my $dir_log_ok = &Common_system::dir_log($flow_id, $task_id, $ok_target_id);
   
   unless(-d $dir_log_ok){
-   mkdir($dir_log_ok, 0755)
+   umask(0002);
+   mkdir($dir_log_ok, 0775);
   }
   
   if($< == 0){
@@ -418,7 +421,8 @@ sub end_of_telnet {
   my $dir_log_ng = &Common_system::dir_log($flow_id, $task_id, $ng_target_id);
   
   unless(-d $dir_log_ng){
-   mkdir($dir_log_ng, 0755)
+   umask(0002);
+   mkdir($dir_log_ng, 0775);
   }
   
   if($< == 0){
@@ -835,7 +839,8 @@ sub exec_case {
     my $dir_log = &Common_system::dir_log($flow_id, $task_id, $target_id);
     
     unless(-d $dir_log){
-     mkdir($dir_log, 0755)
+     umask(0002);
+     mkdir($dir_log, 0775);
     }
     
     my $file_target_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $target_id);

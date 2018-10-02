@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/05/18
 # 更新   : 2018/08/09  自動実行に対応。
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -170,11 +171,13 @@ my $dir_log      = &Common_system::dir_log($flow_id, $task_id, $target_id);
 my $file_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $target_id);
 
 unless(-d $dir_task_log){
- mkdir($dir_task_log, 0755);
+ umask(0002);
+ mkdir($dir_task_log, 0775);
 }
 
 unless(-d $dir_log){
- mkdir($dir_log, 0755);
+ umask(0002);
+ mkdir($dir_log, 0775);
 }
 
 # 実行履歴の書き込み。

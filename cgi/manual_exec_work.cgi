@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/06/24
 # 更新   : 2018/08/13  自動実行に対応。
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -137,7 +138,8 @@ foreach my $ref_target ($ref_ok_link_target, $ref_ng_link_target){
    my $dir_log = &Common_system::dir_log($flow_id, $task_id, $target_id);
    
    unless(-d $dir_log){
-    mkdir($dir_log, 0755)
+    umask(0002);
+    mkdir($dir_log, 0775);
    }
    
    my $file_target_parameter_sheet = &Common_system::file_parameter_sheet($flow_id, $task_id, $target_id);

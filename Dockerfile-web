@@ -1,0 +1,98 @@
+FROM centos:7
+
+ARG DBSERVER
+ARG TELNETMA2
+ARG TELNETMA2_PORT
+
+RUN yum -y install gcc epel-release httpd mod_ssl memcached && \
+    yum -y install cpan \
+     perl-CGI \
+     perl-DBI \
+     perl-DBD-MySQL \
+     perl-JSON \
+     perl-Archive-Zip \
+     perl-Test-Simple \
+     perl-Digest-MD5 \
+     perl-ExtUtils-MakeMaker \
+     perl-libwww-perl \
+     perl-LWP-Protocol-https \
+     perl-Crypt-SSLeay \
+     perl-Crypt-CBC \
+     perl-Cache-Memcached && \
+    yum clean all && \
+    echo q | /usr/bin/perl -MCPAN -e shell && \
+    cpan -f URI::Escape::JavaScript && \
+    cpan -f Crypt::Blowfish && \
+    rm -rf /root/.cpan && \
+    \cp -f /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
+    /usr/sbin/adduser -u 2323 -g root telnetman && \
+    echo telnetman:tcpport23 | chpasswd && \
+    sed -i -e 's/Options Indexes FollowSymLinks/Options MultiViews FollowSymLinks/' /etc/httpd/conf/httpd.conf && \
+    sed -i -e 's/Options None/Options ExecCGI/' /etc/httpd/conf/httpd.conf && \
+    sed -i -e 's/#AddHandler cgi-script \.cgi/AddHandler cgi-script .cgi/' /etc/httpd/conf/httpd.conf && \
+    sed -i -e 's/DirectoryIndex index\.html/DirectoryIndex index.html index.cgi/' /etc/httpd/conf/httpd.conf && \
+    sed -i -e 's/80/8080/g' /etc/httpd/conf/httpd.conf && \
+    sed -i -e '/ErrorDocument 403/s/^/#/' /etc/httpd/conf.d/welcome.conf && \
+    sed -i -e "\$a[SAN]\nsubjectAltName='DNS:telnetman" /etc/pki/tls/openssl.cnf && \
+    sed -i -e 's/<Directory "\/var\/www\/html">/<Directory "\/var\/www\/html">\n    RewriteEngine on\n    RewriteBase \/\n    RewriteRule ^$ TelnetmanWF\/index.html [L]\n    RewriteCond %{REQUEST_FILENAME} !-f\n    RewriteCond %{REQUEST_FILENAME} !-d\n    RewriteRule ^(.+)$ TelnetmanWF\/$1 [L]\n/' /etc/httpd/conf/httpd.conf && \
+    sed -i -e 's/User apache/User telnetman/' /etc/httpd/conf/httpd.conf && \
+    sed -i -e 's/Group apache/Group root/' /etc/httpd/conf/httpd.conf && \
+    openssl req \
+     -newkey rsa:2048 \
+     -days 3650 \
+     -nodes \
+     -x509 \
+     -subj "/C=JP/ST=/L=/O=/OU=/CN=telnetman" \
+     -extensions SAN \
+     -reqexts SAN \
+     -config /etc/pki/tls/openssl.cnf \
+     -keyout /etc/pki/tls/private/server.key \
+     -out /etc/pki/tls/certs/server.crt && \
+    chmod 644 /etc/pki/tls/private/server.key && \
+    chmod 644 /etc/pki/tls/certs/server.crt && \
+    sed -i -e 's/localhost\.key/server.key/' /etc/httpd/conf.d/ssl.conf && \
+    sed -i -e 's/localhost\.crt/server.crt/' /etc/httpd/conf.d/ssl.conf && \
+    sed -i -e 's/443/9443/g' /etc/httpd/conf.d/ssl.conf && \
+    mkdir /usr/local/TelnetmanWF && \
+    mkdir /usr/local/TelnetmanWF/lib && \
+    mkdir /usr/local/TelnetmanWF/pl && \
+    mkdir /var/www/html/TelnetmanWF && \
+    mkdir /var/www/html/TelnetmanWF/js && \
+    mkdir /var/www/html/TelnetmanWF/css && \
+    mkdir /var/www/html/TelnetmanWF/img && \
+    mkdir /var/www/cgi-bin/TelnetmanWF && \
+    mkdir /var/TelnetmanWF
+
+ADD ./html/* /var/www/html/TelnetmanWF/
+ADD ./js/*   /var/www/html/TelnetmanWF/js/
+ADD ./css/*  /var/www/html/TelnetmanWF/css/
+ADD ./img/*  /var/www/html/TelnetmanWF/img/
+ADD ./cgi/*  /var/www/cgi-bin/TelnetmanWF/
+ADD ./lib/*  /usr/local/TelnetmanWF/lib/
+ADD ./pl/*   /usr/local/TelnetmanWF/pl/
+
+RUN sed -i -e "s/localhost/$DBSERVER/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
+    sed -i -e "s/'telnetman', 'tcpport23'/'root', ''/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
+    sed -i -e "s/192\.168\.203\.96/$TELNETMA2:$TELNETMA2_PORT/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
+    chown -R telnetman:root /var/TelnetmanWF && \
+    chmod -R 775 /var/TelnetmanWF && \
+    chmod 644 /usr/local/TelnetmanWF/lib/* && \
+    chmod 644 /usr/local/TelnetmanWF/pl/* && \
+    chmod 644 /var/www/html/TelnetmanWF/*html && \
+    chmod 644 /var/www/html/TelnetmanWF/js/* && \
+    chmod 644 /var/www/html/TelnetmanWF/css/* && \
+    chmod 644 /var/www/html/TelnetmanWF/img/* && \
+    chmod 755 /var/www/cgi-bin/TelnetmanWF/* && \
+    chgrp -R 0   /run/httpd && \
+    chmod -R g=u /run/httpd && \
+    chgrp -R 0   /var/log/httpd && \
+    chmod -R g=u /var/log/httpd
+
+ADD ./install/start-web.sh /sbin/start.sh
+
+EXPOSE 9443
+EXPOSE 11211
+
+USER telnetman
+
+CMD ["sh", "/sbin/start.sh"]

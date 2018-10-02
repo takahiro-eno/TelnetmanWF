@@ -40,7 +40,7 @@ sub access2Telnetman {
  $ua -> default_header('telnetmanAuth' => 'Telnetman ' . $header1 . ' ' . $header2);
  
  my $request = &HTTP::Request::Common::POST(
-  'https://' . $telnetman . ':443/cgi-bin/Telnetman2/' . $cgi,
+  'https://' . $telnetman . '/cgi-bin/Telnetman2/' . $cgi,
   Content_Type => 'form-data',
   Content => $ref_parameter
  );
@@ -78,7 +78,7 @@ sub access2TelnetmanText {
  $ua -> default_header('telnetmanAuth' => 'Telnetman ' . $header1 . ' ' . $header2);
  
  my $request = &HTTP::Request::Common::POST(
-  'https://' . $telnetman . ':443/cgi-bin/Telnetman2/' . $cgi,
+  'https://' . $telnetman . '/cgi-bin/Telnetman2/' . $cgi,
   Content_Type => 'form-data',
   Content => $ref_parameter
  );

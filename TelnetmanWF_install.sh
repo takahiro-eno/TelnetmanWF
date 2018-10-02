@@ -42,6 +42,7 @@ perl-Crypt-CBC \
 perl-Cache-Memcached \
 cpan
 
+yum clean all
 
 # CPAN
 echo q | /usr/bin/perl -MCPAN -e shell
@@ -62,7 +63,6 @@ sed -i -e 's/#AddHandler cgi-script \.cgi/AddHandler cgi-script \.cgi/' /etc/htt
 sed -i -e 's/DirectoryIndex index\.html/DirectoryIndex index\.html index\.cgi/' /etc/httpd/conf/httpd.conf
 sed -i -e '/ErrorDocument 403/s/^/#/' /etc/httpd/conf.d/welcome.conf
 sed -i -e 's/<Directory "\/var\/www\/html">/<Directory "\/var\/www\/html">\n    RewriteEngine on\n    RewriteBase \/\n    RewriteRule ^$ TelnetmanWF\/index.html [L]\n    RewriteCond %{REQUEST_FILENAME} !-f\n    RewriteCond %{REQUEST_FILENAME} !-d\n    RewriteRule ^(.+)$ TelnetmanWF\/$1 [L]\n/' /etc/httpd/conf/httpd.conf
-
 
 
 # SSL
@@ -121,12 +121,14 @@ chmod 644 /etc/cron.d/TelnetmanWF.cron
 chown root:root /etc/cron.d/TelnetmanWF.cron
 
 
-# Firewalld
-firewall-cmd --add-service=https --permanent
-
-
 # Logrotate 
 mv ./install/TelnetmanWF.logrotate.txt /etc/logrotate.d/TelnetmanWF
+chmod 644 /etc/logrotate.d/TelnetmanWF
+chown root:root /etc/logrotate.d/TelnetmanWF
+
+
+# Firewalld
+firewall-cmd --add-service=https --permanent
 
 
 # Disable SELinux

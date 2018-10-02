@@ -2,6 +2,7 @@
 # 説明   : 全フローデータを受け取ってtmp ディレクトリに保存する。    
 # 作成者 : 江野高広
 # 作成日 : 2015/08/21
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -39,7 +40,8 @@ unless(defined($flow_all_data_base64) && (length($flow_all_data_base64) > 0)){
 #
 my $tmp_id = &main::make_tmp_id();
 my $dir_tmp_root = &Common_system::dir_tmp_root($tmp_id);
-mkdir($dir_tmp_root, 0755);
+umask(0002);
+mkdir($dir_tmp_root, 0775);
 
 
 

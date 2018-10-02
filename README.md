@@ -15,16 +15,14 @@ This is a tool to create workflow with Telnetman.
 1. `rm -rf TelnetmanWF`
 1. `sudo reboot`
 
-https&#58;//server address/TelnetmanWF/
+https&#58;//server address/
 
 ### Docker Container
 1. `git clone https://github.com/takahiro-eno/Telnetman2.git`  
 `git clone https://github.com/takahiro-eno/TelnetmanWF.git`
-1. `mv ./Telnetman2/install/Dockerfile ./Telnetman2/`  
-`mv ./TelnetmanWF/install/Dockerfile ./TelnetmanWF/`
-1. `mv ./TelnetmanWF/install/docker-compose.yml ./`
+1. `cd TelnetmanWF`
 1. `sudo docker-compose build`
 1. `sudo docker-compose up -d`
 
-https&#58;//host address:8443/Telnetman2/  
-https&#58;//host address:9443/TelnetmanWF/
+https&#58;//host address:8443/  
+https&#58;//host address:9443/

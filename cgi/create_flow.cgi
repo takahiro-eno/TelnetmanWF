@@ -4,6 +4,7 @@
 # 作成日 : 2015/05/06
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
 # 更新   : 2018/07/02 vcAutoExecBoxId を追加。
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -98,8 +99,9 @@ $access2db -> close;
 #
 my $dir_data_root = &Common_system::dir_data_root($flow_id);
 my $dir_log_root  = &Common_system::dir_log_root($flow_id);
-mkdir($dir_data_root, 0755);
-mkdir($dir_log_root,  0755);
+umask(0002);
+mkdir($dir_data_root, 0775);
+mkdir($dir_log_root,  0775);
 
 
 

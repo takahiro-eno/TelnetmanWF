@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/06/03
 # 更新   : 2018/08/14  自動実行に対応。
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -129,7 +130,8 @@ if(exists($ref_through_target -> {'id'}) && ($ref_through_target -> {'id'} !~ /^
  my $dir_through_target = &Common_system::dir_log($flow_id, $task_id, $through_target_id);
  
  unless(-d $dir_through_target){
-  mkdir($dir_through_target , 0755)
+  umask(0002);
+  mkdir($dir_through_target , 0775);
  }
 }
 

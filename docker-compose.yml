@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+ telnetman2-db:
+  build:
+   context: ../Telnetman2
+   dockerfile: Dockerfile-db
+  volumes:
+   - telnetman2-database:/var/lib/mysql/Telnetman2
+ 
+ telnetman2-web:
+  build:
+   context: ../Telnetman2
+   dockerfile: Dockerfile-web
+   args:
+    DBSERVER: telnetman2-db
+  ports:
+   - 8443:8443
+  depends_on:
+   - telnetman2-db
+  volumes:
+   - telnetman2-file:/var/Telnetman2
+ 
+ telnetman2-cron:
+  build:
+   context: ../Telnetman2
+   dockerfile: Dockerfile-cron
+   args:
+    DBSERVER: telnetman2-db
+  depends_on:
+   - telnetman2-web
+  volumes:
+   - telnetman2-file:/var/Telnetman2
+
+ telnetmanwf-db:
+  build:
+   context: ./
+   dockerfile: Dockerfile-db
+  depends_on:
+   - telnetman2-cron
+  volumes:
+   - telnetmanwf-database:/var/lib/mysql/TelnetmanWF
+ 
+ telnetmanwf-web:
+  build:
+   context: ./
+   dockerfile: Dockerfile-web
+   args:
+    DBSERVER: telnetmanwf-db
+    TELNETMA2: telnetman2-web
+    TELNETMA2_PORT: 8443
+  ports:
+   - 9443:9443
+  depends_on:
+   - telnetmanwf-db
+  volumes:
+   - telnetmanwf-file:/var/TelnetmanWF
+ 
+ telnetmanwf-cron:
+  build:
+   context: ./
+   dockerfile: Dockerfile-cron
+   args:
+    DBSERVER: telnetmanwf-db
+    WEBSERVER: telnetmanwf-web
+    TELNETMA2: telnetman2-web
+    TELNETMA2_PORT: 8443
+  depends_on:
+   - telnetmanwf-web
+  volumes:
+   - telnetmanwf-file:/var/TelnetmanWF
+
+volumes:
+  telnetman2-database:
+  telnetman2-file:
+  telnetmanwf-database:
+  telnetmanwf-file:

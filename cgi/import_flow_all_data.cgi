@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/08/21
 # 更新   : 2018/08/20 旧バージョンのデータの場合はenable password をエンコードする仕様に。
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -202,7 +203,8 @@ my $dir_data_root = &Common_system::dir_data_root($new_flow_id);
 #
 my $dir_log_root = &Common_system::dir_log_root($new_flow_id);
 unless(-d $dir_log_root){
- mkdir($dir_log_root, 0755);
+ umask(0002);
+ mkdir($dir_log_root, 0775);
 }
 
 

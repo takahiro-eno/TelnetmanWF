@@ -6,6 +6,7 @@
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
 # 更新   : 2018/06/29 iExecOnlyOne, vcAutoExecBoxId を追加。
 # 更新   : 2018/08/15 個別パラメーターシートを廃止。
+# 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
 
 use strict;
 use warnings;
@@ -117,7 +118,8 @@ $access2db -> close;
 # ファイル置き場を作る。
 #
 my $dir_data = &Common_system::dir_data($flow_id, $work_id);
-mkdir($dir_data, 0755);
+umask(0002);
+mkdir($dir_data, 0775);
 
 
 
