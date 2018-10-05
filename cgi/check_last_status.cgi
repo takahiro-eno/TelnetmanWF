@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/05/22
 # 更新   : 2018/08/16 自動実行に対応。
+# 更新   : 2018/10/05 memcached サーバーのアドレスを関数で指定。
 
 use strict;
 use warnings;
@@ -66,7 +67,8 @@ else{
 #
 # check_status.pl がT_WorkList 更新中かどうか確認する。
 #
-my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+my $memcached_server = &Common_system::memcached_server();
+my $memcached = Cache::Memcached -> new({servers => [$memcached_server], namespace => $flow_id . ':' . $task_id});
 my $check_status = $memcached -> get('check_status');
 
 if(defined($check_status) && ($check_status == 1)){

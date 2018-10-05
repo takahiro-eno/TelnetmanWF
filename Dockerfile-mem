@@ -1,0 +1,13 @@
+FROM centos:7
+
+RUN yum -y install memcached && \
+    yum clean all && \
+    \cp -f /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
+    /usr/sbin/adduser -u 2323 -g root telnetman && \
+    echo telnetman:tcpport23 | chpasswd
+
+EXPOSE 11211
+
+USER telnetman
+
+CMD ["/usr/bin/memcached", "-p", "11211", "-m", "64", "-c", "1024"]

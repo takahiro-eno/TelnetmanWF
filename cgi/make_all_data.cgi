@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/07/28
 # 更新   : 2018/08/20 version 情報を追加。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -143,6 +144,9 @@ open(ALLDATA, '>', $file_all_data);
 print ALLDATA $json_flow_data_all;
 close(ALLDATA);
 
+umask(0002);
+chmod(0664, $file_all_data);
+
 
 
 #
@@ -169,8 +173,10 @@ foreach my $ref_work_data (@work_data_list){
 my $file_all_data_zip = &Common_system::file_all_data_zip($flow_id);
 $zip -> writeToFileNamed($file_all_data_zip);
 
-unlink($file_all_data);
+umask(0002);
+chmod(0664, $file_all_data_zip);
 
+unlink($file_all_data);
 
 
 

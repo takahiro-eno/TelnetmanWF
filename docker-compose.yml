@@ -41,18 +41,26 @@ services:
   volumes:
    - telnetmanwf-database:/var/lib/mysql/TelnetmanWF
  
+ telnetmanwf-mem:
+  build:
+   context: ./
+   dockerfile: Dockerfile-mem
+  depends_on:
+   - telnetmanwf-db
+
  telnetmanwf-web:
   build:
    context: ./
    dockerfile: Dockerfile-web
    args:
+    SSLPORT: 9443
     DBSERVER: telnetmanwf-db
+    MEMSERVER: telnetmanwf-mem
     TELNETMA2: telnetman2-web
-    TELNETMA2_PORT: 8443
   ports:
    - 9443:9443
   depends_on:
-   - telnetmanwf-db
+   - telnetmanwf-mem
   volumes:
    - telnetmanwf-file:/var/TelnetmanWF
  
@@ -62,9 +70,8 @@ services:
    dockerfile: Dockerfile-cron
    args:
     DBSERVER: telnetmanwf-db
-    WEBSERVER: telnetmanwf-web
+    MEMSERVER: telnetmanwf-mem
     TELNETMA2: telnetman2-web
-    TELNETMA2_PORT: 8443
   depends_on:
    - telnetmanwf-web
   volumes:

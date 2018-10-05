@@ -4,6 +4,7 @@
 # 作成日 : 2015/06/24
 # 更新   : 2018/08/13  自動実行に対応。
 # 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -162,6 +163,9 @@ if(length($json_remaining_parameter_sheet) > 0){
  open(PSHEET, '>', $file_parameter_sheet);
  print PSHEET $json_remaining_parameter_sheet;
  close(PSHEET);
+ 
+ umask(0002);
+ chmod(0664, $file_parameter_sheet);
  
  $exists_parameter_sheet = 1;
 }

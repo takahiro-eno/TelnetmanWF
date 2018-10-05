@@ -11,6 +11,7 @@
 # 更新   : 2018/07/06 iExecOnlyOne に対応。
 # 更新   : 2018/07/17 Telnetman アクセス部分をTelnetmanWF_telnet.pm に外出し。
 # 更新   : 2018/08/09  自動実行に対応。
+# 更新   : 2018/10/05 memcached サーバーのアドレスを関数で指定。
 
 use strict;
 use warnings;
@@ -139,7 +140,8 @@ if(defined($exist_running_work) && ($exist_running_work == 1)){
  exit(0);
 }
 
-my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+my $memcached_server = &Common_system::memcached_server();
+my $memcached = Cache::Memcached -> new({servers => [$memcached_server], namespace => $flow_id . ':' . $task_id});
 my $check_status = $memcached -> get('check_status');
 
 if(defined($check_status) && ($check_status == 1)){

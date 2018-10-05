@@ -5,6 +5,7 @@
 # 更新 2015/12/08 : 個別パラメーターシートを使えるように。
 #      2016/07/05 : ステータス99 に変更するタイミングをTelnetman にアクセスする前に移動。
 # 更新   : 2018/08/09  自動実行に対応。
+# 更新   : 2018/10/05 memcached サーバーのアドレスを関数で指定。
 
 use strict;
 use warnings;
@@ -145,7 +146,8 @@ foreach my $ref_data (@ok_list){
   my $ref_node_status = $ref_data -> [5];
   
   # T_WorkList のiStatus 更新中にcheck_last_status.cgi による確認を防ぐためにフラグを立てる。
-  my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+  my $memcached_server = &Common_system::memcached_server(); 
+  my $memcached = Cache::Memcached -> new({servers => [$memcached_server], namespace => $flow_id . ':' . $task_id});
   my $set_memcached = $memcached -> set('check_status', 1);
   my $force_stop = $memcached -> get('force_stop');
   

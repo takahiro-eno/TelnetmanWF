@@ -7,6 +7,7 @@
 # 更新   : 2018/06/27 user, password を追加。
 # 更新   : 2018/06/29 iExecOnlyOne, vcAutoExecBoxId を追加。
 # 更新   : 2018/08/15 個別パラメーターシートを廃止。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -292,6 +293,9 @@ elsif((length($flowchart_before_file_name) > 0) && (length($flowchart_before_dat
  open(FDATAB, '>', $file_flowchart_before);
  print FDATAB $flowchart_before_data;
  close(FDATAB);
+ 
+ umask(0002);
+ chmod(0664, $file_flowchart_before);
 }
 
 if((length($flowchart_middle_file_name) == 0) && (-f $file_flowchart_middle)){
@@ -301,6 +305,9 @@ elsif((length($flowchart_middle_file_name) > 0) && (length($flowchart_middle_dat
  open(FDATAM, '>', $file_flowchart_middle);
  print FDATAM $flowchart_middle_data;
  close(FDATAM);
+ 
+ umask(0002);
+ chmod(0664, $file_flowchart_middle);
 }
 
 if((length($flowchart_after_file_name) == 0) && (-f $file_flowchart_after)){
@@ -310,6 +317,9 @@ elsif((length($flowchart_after_file_name) > 0) && (length($flowchart_after_data)
  open(FDATAA, '>', $file_flowchart_after);
  print FDATAA $flowchart_after_data;
  close(FDATAA);
+ 
+ umask(0002);
+ chmod(0664, $file_flowchart_after);
 }
 
 if((length($login_info_file_name) == 0) && (-f $file_login_info)){
@@ -319,6 +329,9 @@ elsif((length($login_info_file_name) > 0) && (length($login_info_data) > 0)){
  open(LINFO, '>', $file_login_info);
  print LINFO $login_info_data;
  close(LINFO);
+ 
+ umask(0002);
+ chmod(0664, $file_login_info);
 }
 
 if((length($syslog_values_file_name) == 0) && (-f $file_syslog_values)){
@@ -328,6 +341,9 @@ elsif((length($syslog_values_file_name) > 0) && (length($syslog_values_data) > 0
  open(SVALUES, '>', $file_syslog_values);
  print SVALUES $syslog_values_data;
  close(SVALUES);
+ 
+ umask(0002);
+ chmod(0664, $file_syslog_values);
 }
 
 if((length($diff_values_file_name) == 0) && (-f $file_diff_values)){
@@ -337,6 +353,9 @@ elsif((length($diff_values_file_name) > 0) && (length($diff_values_data) > 0)){
  open(DVALUES, '>', $file_diff_values);
  print DVALUES $diff_values_data;
  close(DVALUES);
+ 
+ umask(0002);
+ chmod(0664, $file_diff_values);
 }
 
 if((length($optional_log_values_file_name) == 0) && (-f $file_optional_log_values)){
@@ -346,6 +365,9 @@ elsif((length($optional_log_values_file_name) > 0) && (length($optional_log_valu
  open(OVALUES, '>', $file_optional_log_values);
  print OVALUES $optional_log_values_data;
  close(OVALUES);
+ 
+ umask(0002);
+ chmod(0664, $file_optional_log_values);
 }
 
 

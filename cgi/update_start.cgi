@@ -4,6 +4,7 @@
 # 作成日 : 2015/05/16
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
 # 更新   : 2018/06/27 user, password を追加。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -229,6 +230,9 @@ elsif((length($default_login_info_file_name) > 0) && (length($default_login_info
  flock(DLOGIN, 2);
  print DLOGIN $default_login_info_data;
  close(DLOGIN);
+ 
+ umask(0002);
+ chmod(0664, $file_default_login_info);
 }
 
 

@@ -5,9 +5,10 @@ if [ -z "$(ls /var/TelnetmanWF)" ]; then
  mkdir /var/TelnetmanWF/log
  mkdir /var/TelnetmanWF/tmp
 
+ touch /var/TelnetmanWF/log/sql_log
+ touch /var/TelnetmanWF/log/logrotate.status
+
  chmod -R g=u /var/TelnetmanWF/*
 fi
-
-/usr/bin/memcached -d
 
 exec /usr/sbin/httpd -D FOREGROUND

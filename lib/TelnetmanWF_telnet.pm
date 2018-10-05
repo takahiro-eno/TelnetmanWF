@@ -2,6 +2,7 @@
 # 説明   : Telnetman にアクセスする。
 # 作成日 : 2018/07/12
 # 作成者 : 江野高広
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -538,9 +539,15 @@ sub make_parameter_sheet {
   print PSHEET $json_parameter_sheet_exec;
   close(PSHEET);
   
+  umask(0002);
+  chmod(0664, $file_parameter_sheet_exec);
+  
   open(PSHEET, '>', $file_parameter_sheet);
   print PSHEET $json_parameter_sheet_through;
   close(PSHEET);
+  
+  umask(0002);
+  chmod(0664, $file_parameter_sheet);
  }
  else{
   $json_parameter_sheet_exec = $json_parameter_sheet;

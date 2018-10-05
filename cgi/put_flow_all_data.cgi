@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2015/08/21
 # 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -55,6 +56,9 @@ open(ZIP, '>', $file_zip);
 binmode(ZIP);
 print ZIP $flow_all_data_binary;
 close(ZIP);
+
+umask(0002);
+chmod(0664, $file_zip);
 
 
 

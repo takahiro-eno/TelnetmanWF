@@ -6,6 +6,7 @@
 # 更新   : 2015/12/24 syslog 確認のJSON を取り込めるように。
 # 更新   : 2016/01/28 enable password をログイン情報ファイルから外す。
 # 更新   : 2018/08/09 個別パラメーターシートを廃止。
+# 更新   : 2018/10/05 memcached サーバーのアドレスを関数で指定。
 
 use strict;
 use warnings;
@@ -27,6 +28,10 @@ sub telnetman {
  return('192.168.203.96');
 }
 
+# memcached サーバーのアドレス
+sub memcached_server {
+ return('127.0.0.1:11211');
+}
 
 # データディレクトリの絶対パス。
 sub dir_var {

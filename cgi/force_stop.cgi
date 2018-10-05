@@ -2,6 +2,7 @@
 # 説明   : 強制終了フラグを立てる。
 # 作成者 : 江野高広
 # 作成日 : 2018/08/20
+# 更新   : 2018/10/05 memcached サーバーのアドレスを関数で指定。
 
 use strict;
 use warnings;
@@ -52,7 +53,8 @@ my $task_id = $ref_auth -> {'task_id'};
 #
 # 強制終了フラグを立てる。
 #
-my $memcached = Cache::Memcached -> new({servers => ['127.0.0.1:11211'], namespace => $flow_id . ':' . $task_id});
+my $memcached_server = &Common_system::memcached_server();
+my $memcached = Cache::Memcached -> new({servers => [$memcached_server], namespace => $flow_id . ':' . $task_id});
 my $force_stop = $memcached -> set('force_stop', 1);
 
 

@@ -3,6 +3,7 @@
 # 作成者 : 江野高広
 # 作成日 : 2018/07/20
 # 更新   : 2018/10/01 作成するディレクトリのパーミッションを775 に。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -452,6 +453,9 @@ sub end_of_telnet {
     print LOG $reason;
     close(LOG);
     
+    umask(0002);
+    chmod(0664, $file_error_log);
+    
     if($< == 0){
      chown(48, 48, $file_error_log);
     }
@@ -470,6 +474,9 @@ sub end_of_telnet {
     print LOG $log;
     close(LOG);
     
+    umask(0002);
+    chmod(0664, $file_ok_log);
+    
     if($< == 0){
      chown(48, 48, $file_ok_log);
     }
@@ -481,6 +488,9 @@ sub end_of_telnet {
     open(LOG, '>', $file_ng_log);
     print LOG $log;
     close(LOG);
+    
+    umask(0002);
+    chmod(0664, $file_ng_log);
     
     if($< == 0){
      chown(48, 48, $file_ng_log);
@@ -494,6 +504,9 @@ sub end_of_telnet {
     print LOG $log;
     close(LOG);
     
+    umask(0002);
+    chmod(0664, $file_ng_log);
+    
     if($< == 0){
      chown(48, 48, $file_ng_log);
     }
@@ -505,6 +518,9 @@ sub end_of_telnet {
     open(LOG, '>', $file_error_log);
     print LOG $log;
     close(LOG);
+    
+    umask(0002);
+    chmod(0664, $file_error_log);
     
     if($< == 0){
      chown(48, 48, $file_error_log);
@@ -521,6 +537,9 @@ sub end_of_telnet {
     open(LOG, '>', $file_diff_log);
     print LOG $diff_log;
     close(LOG);
+    
+    umask(0002);
+    chmod(0664, $file_diff_log);
     
     if($< == 0){
      chown(48, 48, $file_diff_log);
@@ -561,6 +580,9 @@ sub end_of_telnet {
    open(LOG, '>', $file_optional_log);
    print LOG $optional_log;
    close(LOG);
+   
+   umask(0002);
+   chmod(0664, $file_optional_log);
    
    if($< == 0){
     chown(48, 48, $file_optional_log);
@@ -678,6 +700,9 @@ sub make_zip_log {
   
   $zip -> writeToFileNamed($file_zip);
   
+  umask(0002);
+  chmod(0664, $file_zip);
+  
   if($< == 0){
    chown(48, 48, $file_zip);
   }
@@ -697,6 +722,9 @@ sub make_zip_log {
   }
   
   $zip -> writeToFileNamed($file_zip);
+  
+  umask(0002);
+  chmod(0664, $file_zip);
   
   if($< == 0){
    chown(48, 48, $file_zip);
@@ -718,6 +746,9 @@ sub make_zip_log {
   
   $zip -> writeToFileNamed($file_zip);
   
+  umask(0002);
+  chmod(0664, $file_zip);
+  
   if($< == 0){
    chown(48, 48, $file_zip);
   }
@@ -738,6 +769,9 @@ sub make_zip_log {
   
   $zip -> writeToFileNamed($file_zip);
   
+  umask(0002);
+  chmod(0664, $file_zip);
+  
   if($< == 0){
    chown(48, 48, $file_zip);
   }
@@ -757,6 +791,9 @@ sub make_zip_log {
   }
   
   $zip -> writeToFileNamed($file_zip);
+  
+  umask(0002);
+  chmod(0664, $file_zip);
   
   if($< == 0){
    chown(48, 48, $file_zip);
@@ -859,6 +896,9 @@ sub exec_case {
   open(PSHEET, '>', $file_parameter_sheet);
   print PSHEET $json_remaining_parameter_sheet;
   close(PSHEET);
+  
+  umask(0002);
+  chmod(0664, $file_parameter_sheet);
  }
  
  

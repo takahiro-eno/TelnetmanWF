@@ -6,6 +6,7 @@
 # 更新 2018/03/15 : SJIS, UTF8 両方のログをダウンロードする。
 # 更新 2018/07/18 : work, case 実行に関するサブルーチンをExec_box.pm に移動。
 # 更新 2018/08/09 : 自動実行に対応。
+# 更新   : 2018/10/05 作成するファイルのパーミッションを664 に。
 
 use strict;
 use warnings;
@@ -792,6 +793,9 @@ sub push_parameter_sheet {
   print PSHEET $json_new_parameter_sheet;
   close(PSHEET);
   
+  umask(0002);
+  chmod(0664, $file_parameter_sheet);
+  
   if($< == 0){
    chown(48, 48, $file_parameter_sheet);
   }
@@ -808,6 +812,9 @@ sub push_parameter_sheet {
  open(PSHEET, '>', $file_parameter_sheet);
  print PSHEET $json_parameter_sheet;
  close(PSHEET);
+ 
+ umask(0002);
+ chmod(0664, $file_parameter_sheet);
  
  if($< == 0){
   chown(48, 48, $file_parameter_sheet);
