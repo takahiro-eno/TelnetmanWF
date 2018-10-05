@@ -54,7 +54,7 @@ RUN yum -y install gcc epel-release httpd mod_ssl && \
     chmod 644 /etc/pki/tls/certs/server.crt && \
     sed -i -e 's/localhost\.key/server.key/' /etc/httpd/conf.d/ssl.conf && \
     sed -i -e 's/localhost\.crt/server.crt/' /etc/httpd/conf.d/ssl.conf && \
-    sed -i -e 's/443/$SSLPORT/g' /etc/httpd/conf.d/ssl.conf && \
+    sed -i -e "s/443/$SSLPORT/g" /etc/httpd/conf.d/ssl.conf && \
     mkdir /usr/local/TelnetmanWF && \
     mkdir /usr/local/TelnetmanWF/lib && \
     mkdir /usr/local/TelnetmanWF/pl && \
