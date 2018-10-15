@@ -3,7 +3,7 @@
 if [ ! -e "/var/lib/mysql/TelnetmanWF" ]; then
  mkdir /var/lib/mysql/TelnetmanWF
  /usr/bin/mysqld_safe --skip-grant-tables &
- /bin/sleep 5
+ /bin/sleep 10
  /bin/mysql -u root < /root/TelnetmanWF.sql
  /bin/mysqladmin shutdown
 
