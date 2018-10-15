@@ -246,7 +246,7 @@ items:
           - containerPort: 3306
             protocol: "TCP"
         volumeMounts:
-          - mountPath: "/var/lib/mysql/TelnetmanWF"
+          - mountPath: "/var/lib/mysql"
             name: "telnetmanwf-database-dir"
       - name: "telnetmanwf-mem"
         image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-mem:latest"

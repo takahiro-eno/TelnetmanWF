@@ -6,7 +6,7 @@ services:
    context: ../Telnetman2
    dockerfile: Dockerfile-db
   volumes:
-   - telnetman2-database:/var/lib/mysql/Telnetman2
+   - telnetman2-database:/var/lib/mysql
  
  telnetman2-web:
   build:
@@ -39,7 +39,7 @@ services:
   depends_on:
    - telnetman2-cron
   volumes:
-   - telnetmanwf-database:/var/lib/mysql/TelnetmanWF
+   - telnetmanwf-database:/var/lib/mysql
  
  telnetmanwf-mem:
   build:
