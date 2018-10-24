@@ -215,7 +215,7 @@ items:
           secret: "<SECRET>"
 EOF
 ```
-- Deploy Config  
+- Deployment Config  
 \<Project Name\> : Youer project name.  
 \<openshift_master_default_subdomain\> : A value defined in inventory file.  
 ```
@@ -225,41 +225,68 @@ kind: "List"
 items:
 
 - apiVersion: "v1"
-  kind: "Pod"
+  kind: "DeploymentConfig"
   metadata:
     name: "telnetmanwf"
-    labels:
-      deploymentconfig: "telnetmanwf"
   spec:
-    containers:
-      - name: "telnetmanwf-web"
-        image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-web:latest"
-        ports:
-          - containerPort: 8443
-            protocol: "TCP"
-        volumeMounts:
-          - mountPath: "/var/TelnetmanWF"
-            name: "telnetmanwf-file-dir"
-      - name: "telnetmanwf-db"
-        image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-db:latest"
-        ports:
-          - containerPort: 3306
-            protocol: "TCP"
-        volumeMounts:
-          - mountPath: "/var/lib/mysql"
-            name: "telnetmanwf-database-dir"
-      - name: "telnetmanwf-mem"
-        image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-mem:latest"
-        ports:
-          - containerPort: 11211
-            protocol: "TCP"
-    volumes:
-      - name: "telnetmanwf-file-dir"
-        persistentVolumeClaim:
-          claimName: "telnetmanwf-file"
-      - name: "telnetmanwf-database-dir"
-        persistentVolumeClaim:
-          claimName: "telnetmanwf-database"
+    template: 
+      metadata:
+        labels:
+          name: "telnetmanwf"
+      spec:
+        containers:
+          - name: "telnetmanwf-web"
+            image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-web:latest"
+            ports:
+              - containerPort: 8443
+                protocol: "TCP"
+            volumeMounts:
+              - mountPath: "/var/TelnetmanWF"
+                name: "telnetmanwf-file-dir"
+          - name: "telnetmanwf-db"
+            image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-db:latest"
+            ports:
+              - containerPort: 3306
+                protocol: "TCP"
+            volumeMounts:
+              - mountPath: "/var/lib/mysql"
+                name: "telnetmanwf-database-dir"
+          - name: "telnetmanwf-mem"
+            image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-mem:latest"
+            ports:
+              - containerPort: 11211
+                protocol: "TCP"
+        volumes:
+          - name: "telnetmanwf-file-dir"
+            persistentVolumeClaim:
+              claimName: "telnetmanwf-file"
+          - name: "telnetmanwf-database-dir"
+            persistentVolumeClaim:
+              claimName: "telnetmanwf-database"
+    replicas: 1
+    triggers:
+      - type: "ConfigChange"
+      - type: "ImageChange"
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - "telnetmanwf-web"
+          from:
+            kind: "ImageStreamTag"
+            name: "telnetmanwf-web:latest"
+      - type: "ImageChange"
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - "telnetmanwf-db"
+          from:
+            kind: "ImageStreamTag"
+            name: "telnetmanwf-db:latest"
+    strategy: 
+      type: "Rolling"
+    paused: false
+    revisionHistoryLimit: 2 
+    minReadySeconds: 0
 
 - apiVersion: "v1"
   kind: "Service"
