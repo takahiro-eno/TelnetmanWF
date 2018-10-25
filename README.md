@@ -240,6 +240,8 @@ items:
             ports:
               - containerPort: 8443
                 protocol: "TCP"
+              - containerPort: 8080
+                protocol: "TCP"
             volumeMounts:
               - mountPath: "/var/TelnetmanWF"
                 name: "telnetmanwf-file-dir"
@@ -298,6 +300,10 @@ items:
       protocol: "TCP"
       port: 8443
       targetPort: 8443
+    - name: "8080-tcp"
+      protocol: "TCP"
+      port: 8080
+      targetPort: 8080
     - name: "3306-tcp"
       protocol: "TCP"
       port: 3306
@@ -316,9 +322,9 @@ items:
   spec:
     host: "telnetmanwf-<Project Name>.<openshift_master_default_subdomain>"
     port:
-      targetPort: "8443-tcp"
+      targetPort: "8080-tcp"
     tls:
-      termination: "passthrough"
+      termination: "edge"
     to:
       kind: "Service"
       name: "telnetmanwf"
