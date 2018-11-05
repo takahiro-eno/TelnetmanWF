@@ -4,7 +4,7 @@ ARG DBSERVER
 ARG MEMSERVER
 ARG TELNETMA2
 
-RUN yum -y install gcc epel-release mod_ssl cronie logrotate && \
+RUN yum -y install gcc epel-release mod_ssl && \
     yum -y install cpan \
      perl-DBI \
      perl-DBD-MySQL \
@@ -33,7 +33,7 @@ RUN yum -y install gcc epel-release mod_ssl cronie logrotate && \
 
 ADD ./lib/*  /usr/local/TelnetmanWF/lib/
 ADD ./pl/*   /usr/local/TelnetmanWF/pl/
-ADD ./install/TelnetmanWF.logrotate.txt /etc/logrotate.d/TelnetmanWF
+ADD ./install/logrotate.sh /usr/local/bin/logrotate.sh
 
 RUN sed -i -e "s/localhost/$DBSERVER/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
     sed -i -e "s/'telnetman', 'tcpport23'/'root', ''/" /usr/local/TelnetmanWF/lib/Common_system.pm && \
@@ -42,8 +42,6 @@ RUN sed -i -e "s/localhost/$DBSERVER/" /usr/local/TelnetmanWF/lib/Common_system.
     chown -R telnetman:root /var/TelnetmanWF && \
     chmod -R 775 /var/TelnetmanWF && \
     chmod 644 /usr/local/TelnetmanWF/lib/* && \
-    chmod 644 /usr/local/TelnetmanWF/pl/* && \
-    chown root:root /etc/logrotate.d/TelnetmanWF && \
-    chmod 644 /etc/logrotate.d/TelnetmanWF
+    chmod 644 /usr/local/TelnetmanWF/pl/*
 
-USER telnetmn
+USER telnetman

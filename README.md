@@ -392,7 +392,7 @@ items:
             containers:
               - name: "telnetmanwf-logrotate"
                 image: "docker-registry.default.svc:5000/<Project Name>/telnetmanwf-cron:latest"
-                command: ["logrotate", "-s", "/var/TelnetmanWF/log/logrotate.status", "/etc/logrotate.d/TelnetmanWF"]
+                command: ["sh", "/usr/local/bin/logrotate.sh", "/var/TelnetmanWF/log/sql_log"]
                 volumeMounts:
                   - mountPath: "/var/TelnetmanWF"
                     name: "telnetmanwf-file-dir"
